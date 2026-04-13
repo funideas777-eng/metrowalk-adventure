@@ -1,4 +1,4 @@
-const ShooterGame = {
+window.ShooterGame = {
   targets: [], score: 0, round: 1, hits: 0, combo: 0, maxCombo: 0,
   targetSize: 50, moveSpeed: 1, targetsToHit: 10,
   spawnTimer: null, canvasW: 0, canvasH: 0,

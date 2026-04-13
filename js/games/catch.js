@@ -1,4 +1,4 @@
-const CatchGame = {
+window.CatchGame = {
   basket: { x: 0, width: 60 },
   items: [], score: 0, round: 1, catches: 0,
   spawnTimer: null, fallSpeed: 2, spawnRate: 1200,

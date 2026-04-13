@@ -1,4 +1,4 @@
-const RhythmGame = {
+window.RhythmGame = {
   lanes: 3, notes: [], score: 0, round: 1, hits: 0,
   combo: 0, maxCombo: 0, noteSpeed: 2, spawnRate: 800,
   hitZoneY: 0, spawnTimer: null,

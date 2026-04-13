@@ -1,4 +1,4 @@
-const ReactionGame = {
+window.ReactionGame = {
   score: 0, round: 1, hits: 0, combo: 0, maxCombo: 0,
   currentColor: null, targetColor: '#4CAF50', isTarget: false,
   reactionWindow: 1000, targetsToHit: 10,

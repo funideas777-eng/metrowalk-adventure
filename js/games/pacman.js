@@ -1,4 +1,4 @@
-const PacmanGame = {
+window.PacmanGame = {
   grid: [], player: null, ghosts: [], dots: [], powerPellets: [],
   direction: 'right', nextDirection: 'right',
   cellSize: 0, cols: 15, rows: 15,

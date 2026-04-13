@@ -129,24 +129,18 @@
   const btnStart = document.getElementById('btnStart');
   const loadingMsg = document.getElementById('loadingMsg');
 
-  // === 載入遊戲腳本 (帶 cache-busting) ===
+  // === 載入遊戲腳本 (fetch+eval 確保全域變數可用) ===
   function loadGameScript() {
-    return new Promise((resolve, reject) => {
-      if (!gameEntry) { resolve(null); return; }
-      const s = document.createElement('script');
-      // 加上版本號避免 SW 快取舊版
-      s.src = gameEntry.file + '?v=' + Date.now();
-      s.onload = () => {
-        const engine = window[gameEntry.engine];
-        if (engine) {
-          resolve(engine);
-        } else {
-          reject(new Error('Engine not found: ' + gameEntry.engine));
-        }
-      };
-      s.onerror = () => reject(new Error('Script load failed: ' + gameEntry.file));
-      document.body.appendChild(s);
-    });
+    if (!gameEntry) return Promise.resolve(null);
+    return fetch(gameEntry.file + '?v=' + Date.now())
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function(code) {
+        // 用 Function 執行確保是全域作用域
+        new Function(code)();
+        var engine = window[gameEntry.engine];
+        if (!engine) throw new Error('Engine not found after eval: ' + gameEntry.engine);
+        return engine;
+      });
   }
 
   // 載入並啟用按鈕

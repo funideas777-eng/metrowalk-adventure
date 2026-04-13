@@ -1,4 +1,4 @@
-const SnakeGame = {
+window.SnakeGame = {
   snake: [], food: null, goldenFood: null,
   direction: 'right', nextDirection: 'right',
   score: 0, round: 1, speed: 150,

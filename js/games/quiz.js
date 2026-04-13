@@ -1,4 +1,4 @@
-const QuizGame = {
+window.QuizGame = {
   questions: [], currentIdx: 0, score: 0, streak: 0, maxStreak: 0,
   questionTimer: null, timePerQ: 8, timeLeft: 0, answered: false,
   round: 1, questionsPerRound: 5, roundQCount: 0,

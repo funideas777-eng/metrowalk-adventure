@@ -1,4 +1,4 @@
-const DodgeGame = {
+window.DodgeGame = {
   player: { x: 0, width: 30 },
   obstacles: [], coins: [], score: 0, round: 1,
   fallSpeed: 2, spawnRate: 800, surviveTime: 0,

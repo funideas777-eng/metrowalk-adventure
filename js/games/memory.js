@@ -1,4 +1,4 @@
-const MemoryGame = {
+window.MemoryGame = {
   cards: [], flipped: [], matched: 0, totalPairs: 0,
   score: 0, round: 1, flips: 0, locked: false, cols: 4, rows: 3,
   EMOJIS: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🦁','🐯','🐮','🐷','🐸','🐵','🦄','🐙','🦋'],

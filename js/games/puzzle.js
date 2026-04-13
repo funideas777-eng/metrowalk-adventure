@@ -1,4 +1,4 @@
-const PuzzleGame = {
+window.PuzzleGame = {
   grid: [], size: 3, emptyPos: { x: 0, y: 0 },
   score: 0, round: 1, moves: 0,
   solved: false,

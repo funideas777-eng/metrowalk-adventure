@@ -1,4 +1,4 @@
-const WhackGame = {
+window.WhackGame = {
   holes: [], score: 0, combo: 0, maxCombo: 0, round: 1,
   spawnTimer: null, spawnInterval: 1000, hitCount: 0,
   TARGETS: ['😀','🤪','🤩','🥳','😎','🤓'], RARE: '🌟', DANGER: '💀',

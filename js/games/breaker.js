@@ -1,4 +1,4 @@
-const BreakerGame = {
+window.BreakerGame = {
   paddle: { x: 0, width: 60, height: 10 },
   ball: { x: 0, y: 0, dx: 3, dy: -3, radius: 6 },
   bricks: [], score: 0, round: 1,
