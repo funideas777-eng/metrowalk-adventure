@@ -38,6 +38,31 @@ const SnakeGame = {
     };
     canvas.addEventListener('touchstart', this._touchStart, { passive: true });
     canvas.addEventListener('touchend', this._touchEnd, { passive: true });
+    // Keyboard support
+    this._keyDown = e => {
+      const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+      if (map[e.key]) {
+        const opposite = { up:'down', down:'up', left:'right', right:'left' };
+        if (map[e.key] !== opposite[this.direction]) this.nextDirection = map[e.key];
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', this._keyDown);
+    // Mouse swipe support
+    this._mouseDown = e => { this.touchStartX = e.clientX; this.touchStartY = e.clientY; };
+    this._mouseUp = e => {
+      const dx = e.clientX - this.touchStartX, dy = e.clientY - this.touchStartY;
+      if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && this.direction !== 'left') this.nextDirection = 'right';
+        else if (dx < 0 && this.direction !== 'right') this.nextDirection = 'left';
+      } else {
+        if (dy > 0 && this.direction !== 'up') this.nextDirection = 'down';
+        else if (dy < 0 && this.direction !== 'down') this.nextDirection = 'up';
+      }
+    };
+    canvas.addEventListener('mousedown', this._mouseDown);
+    canvas.addEventListener('mouseup', this._mouseUp);
   },
 
   startMoving() {
@@ -85,5 +110,5 @@ const SnakeGame = {
     ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
     ctx.fillText(`Round ${this.round} | 目標長度: ${this.roundTarget + 3}`, 4, 14);
   },
-  cleanup() { if (this.moveTimer) clearTimeout(this.moveTimer); if (this.goldenTimer) clearInterval(this.goldenTimer); const c = this.game.canvas; if (c) { c.removeEventListener('touchstart', this._touchStart); c.removeEventListener('touchend', this._touchEnd); } }
+  cleanup() { if (this.moveTimer) clearTimeout(this.moveTimer); if (this.goldenTimer) clearInterval(this.goldenTimer); const c = this.game.canvas; if (c) { c.removeEventListener('touchstart', this._touchStart); c.removeEventListener('touchend', this._touchEnd); c.removeEventListener('mousedown', this._mouseDown); c.removeEventListener('mouseup', this._mouseUp); } document.removeEventListener('keydown', this._keyDown); }
 };

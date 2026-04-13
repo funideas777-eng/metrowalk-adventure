@@ -9,13 +9,17 @@ const ShooterGame = {
     this.targetSize = 50; this.moveSpeed = 1; this.targetsToHit = 10;
     this.canvasW = game.canvas.width; this.canvasH = game.canvas.height;
     this.targets = [];
+    this._lastTap = 0;
     this._tap = e => {
+      if (Date.now() - this._lastTap < 100) return;
+      this._lastTap = Date.now();
       const rect = game.canvas.getBoundingClientRect();
       const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
       const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
       this.checkHit(x, y);
     };
     game.canvas.addEventListener('touchstart', this._tap, { passive: true });
+    game.canvas.addEventListener('click', this._tap);
     this.startSpawning();
   },
 
@@ -103,6 +107,6 @@ const ShooterGame = {
 
   cleanup() {
     if (this.spawnTimer) clearInterval(this.spawnTimer);
-    if (this.game.canvas) this.game.canvas.removeEventListener('touchstart', this._tap);
+    if (this.game.canvas) { this.game.canvas.removeEventListener('touchstart', this._tap); this.game.canvas.removeEventListener('click', this._tap); }
   }
 };

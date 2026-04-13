@@ -11,13 +11,18 @@ const RhythmGame = {
     this.canvasW = game.canvas.width; this.canvasH = game.canvas.height;
     this.laneWidth = Math.floor(this.canvasW / this.lanes);
     this.hitZoneY = this.canvasH - 60;
+    this._lastTap = 0;
     this._tap = e => {
+      if (Date.now() - this._lastTap < 100) return;
+      this._lastTap = Date.now();
       const rect = game.canvas.getBoundingClientRect();
-      const x = e.touches[0].clientX - rect.left;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const x = clientX - rect.left;
       const lane = Math.floor(x / this.laneWidth);
       this.hitNote(lane);
     };
     game.canvas.addEventListener('touchstart', this._tap, { passive: true });
+    game.canvas.addEventListener('click', this._tap);
     this.startSpawning();
   },
 
@@ -109,6 +114,6 @@ const RhythmGame = {
 
   cleanup() {
     if (this.spawnTimer) clearInterval(this.spawnTimer);
-    if (this.game.canvas) this.game.canvas.removeEventListener('touchstart', this._tap);
+    if (this.game.canvas) { this.game.canvas.removeEventListener('touchstart', this._tap); this.game.canvas.removeEventListener('click', this._tap); }
   }
 };

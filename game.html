@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/common.css">
   <style>
     body { background:#1a1a2e; }
-    .game-page { min-height:100vh; position:relative; overflow:hidden; }
+    .game-page { min-height:100vh; min-height:100dvh; position:relative; overflow:hidden; }
     .danmaku-overlay { position:absolute; top:60px; left:0; right:0; height:120px; pointer-events:none; overflow:hidden; z-index:5; }
     .game-intro { position:absolute; top:0;left:0;right:0;bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:50; color:white; padding:32px; text-align:center; }
     .game-intro-icon { font-size:64px; margin-bottom:16px; }
@@ -18,12 +18,13 @@
     .game-intro-rounds { font-size:13px; color:var(--accent); margin-bottom:24px; }
     .game-countdown { position:absolute; top:0;left:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:40; }
     .game-countdown-num { font-size:120px; font-weight:900; color:white; animation:pulse 0.5s; }
-    .game-canvas-container { width:100%; height:calc(100vh - 100px); position:relative; display:flex; align-items:center; justify-content:center; }
+    .game-canvas-container { width:100%; height:calc(100vh - 100px); height:calc(100dvh - 100px); position:relative; display:flex; align-items:center; justify-content:center; overflow-y:auto; z-index:1; }
     .game-canvas-container canvas { display:block; max-width:100%; max-height:100%; touch-action:none; }
     .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:60; color:white; text-align:center; padding:32px; }
     .result-score { font-size:64px; font-weight:900; color:var(--primary); }
     .result-label { font-size:14px; color:rgba(255,255,255,0.6); margin-top:8px; }
     .result-bonus { font-size:16px; color:var(--accent); font-weight:700; margin-top:8px; }
+    .btn-start-game:disabled { opacity:0.6; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -40,7 +41,7 @@
     <div class="game-intro-title" id="introTitle"></div>
     <div class="game-intro-desc" id="introDesc"></div>
     <div class="game-intro-rounds" id="introRounds"></div>
-    <button class="btn btn-primary btn-lg" onclick="startCountdown()">開始遊戲</button>
+    <button class="btn btn-primary btn-lg btn-start-game" id="btnStart" onclick="startCountdown()" disabled>載入中...</button>
     <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">返回地圖</button>
   </div>
   <div class="game-countdown" id="gameCountdown"><div class="game-countdown-num" id="countdownNum">3</div></div>
@@ -92,7 +93,25 @@
     puzzle:{file:'js/games/puzzle.js',engine:'PuzzleGame'}
   };
   const gameEntry = GAME_ENGINES[gameId]; let gameEngine = null;
-  if (gameEntry) { const s = document.createElement('script'); s.src = gameEntry.file; s.onload = () => { gameEngine = window[gameEntry.engine]; }; document.body.appendChild(s); }
+  const btnStart = document.getElementById('btnStart');
+  if (gameEntry) {
+    const s = document.createElement('script');
+    s.src = gameEntry.file;
+    s.onload = () => {
+      gameEngine = window[gameEntry.engine];
+      btnStart.disabled = false;
+      btnStart.textContent = '開始遊戲';
+    };
+    s.onerror = () => {
+      btnStart.textContent = '載入失敗，點擊重試';
+      btnStart.disabled = false;
+      btnStart.onclick = () => window.location.reload();
+    };
+    document.body.appendChild(s);
+  } else {
+    btnStart.disabled = false;
+    btnStart.textContent = '開始遊戲';
+  }
 
   const GameState = { running:false, score:0, combo:0, maxCombo:0, timeLeft:gameConfig.duration||60, canvas:null, ctx:null, timer:null, animFrame:null,
     updateHUD() { document.getElementById('hudScore').textContent=this.score; document.getElementById('hudTime').textContent=this.timeLeft; document.getElementById('hudCombo').textContent=this.combo; }
@@ -101,6 +120,13 @@
   canvas.width = Math.min(400, container.clientWidth); canvas.height = Math.min(600, container.clientHeight - 20);
   GameState.canvas = canvas; GameState.ctx = canvas.getContext('2d');
 
+  /* --- Keyboard support (arrow keys / WASD) --- */
+  document.addEventListener('keydown', (e) => {
+    if (!GameState.running) return;
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
+    if (map[e.key]) { e.preventDefault(); }
+  });
+
   function startCountdown() {
     document.getElementById('gameIntro').style.display = 'none';
     const cd = document.getElementById('gameCountdown'); cd.style.display = 'flex';
@@ -108,6 +134,11 @@
     const ci = setInterval(() => { count--; if (count > 0) { document.getElementById('countdownNum').textContent = count; AudioEngine.countdown(); } else { clearInterval(ci); cd.style.display = 'none'; startGame(); } }, 1000);
   }
   function startGame() {
+    if (!gameEngine) {
+      alert('遊戲引擎尚未載入，請重新整理頁面');
+      window.location.reload();
+      return;
+    }
     GameState.running = true; GameState.score = 0; GameState.combo = 0; GameState.maxCombo = 0;
     GameState.timeLeft = gameConfig.duration || 60; GameState.updateHUD(); AudioEngine.gameStart();
     if (gameEngine) gameEngine.init(GameState);

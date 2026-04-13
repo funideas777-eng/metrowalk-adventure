@@ -14,6 +14,12 @@ const BreakerGame = {
     };
     game.canvas.addEventListener('touchmove', this._touchMove, { passive: true });
     game.canvas.addEventListener('touchstart', this._touchMove, { passive: true });
+    // Mouse support
+    this._mouseMove = e => {
+      const rect = game.canvas.getBoundingClientRect();
+      this.paddle.x = Math.max(0, Math.min(this.canvasW - this.paddle.width, e.clientX - rect.left - this.paddle.width / 2));
+    };
+    game.canvas.addEventListener('mousemove', this._mouseMove);
     this.startRound();
   },
 
@@ -91,7 +97,7 @@ const BreakerGame = {
     this.bricks.forEach(b => { ctx.fillStyle = b.color; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.strokeRect(b.x, b.y, b.w, b.h); });
     // Paddle
     ctx.fillStyle = '#E91E63';
-    ctx.beginPath(); ctx.roundRect(this.paddle.x, this.canvasH - 30, this.paddle.width, this.paddle.height, 5); ctx.fill();
+    ctx.fillRect(this.paddle.x, this.canvasH - 30, this.paddle.width, this.paddle.height);
     // Ball
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(this.ball.x, this.ball.y, this.ball.radius, 0, Math.PI * 2); ctx.fill();
@@ -99,6 +105,6 @@ const BreakerGame = {
 
   cleanup() {
     const c = this.game.canvas;
-    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); }
+    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); c.removeEventListener('mousemove', this._mouseMove); }
   }
 };

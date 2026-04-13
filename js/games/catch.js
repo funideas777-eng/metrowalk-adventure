@@ -19,6 +19,12 @@ const CatchGame = {
     };
     game.canvas.addEventListener('touchmove', this._touchMove, { passive: true });
     game.canvas.addEventListener('touchstart', this._touchMove, { passive: true });
+    // Mouse support
+    this._mouseMove = e => {
+      const rect = game.canvas.getBoundingClientRect();
+      this.basket.x = Math.max(0, Math.min(this.canvasW - this.basket.width, e.clientX - rect.left - this.basket.width/2));
+    };
+    game.canvas.addEventListener('mousemove', this._mouseMove);
     this.startSpawning();
   },
 
@@ -84,6 +90,6 @@ const CatchGame = {
   cleanup() {
     if (this.spawnTimer) clearInterval(this.spawnTimer);
     const c = this.game.canvas;
-    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); }
+    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); c.removeEventListener('mousemove', this._mouseMove); }
   }
 };

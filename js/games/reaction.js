@@ -16,8 +16,10 @@ const ReactionGame = {
     const canvas = game.canvas; canvas.style.display = 'none';
     let c = document.getElementById('reaction-container');
     if (!c) { c = document.createElement('div'); c.id = 'reaction-container'; c.style.cssText = 'width:100%;max-width:400px;margin:0 auto;padding:16px;text-align:center;'; canvas.parentElement.appendChild(c); }
-    this._tap = () => this.handleTap();
+    this._lastTap = 0;
+    this._tap = () => { if (Date.now() - this._lastTap < 100) return; this._lastTap = Date.now(); this.handleTap(); };
     c.addEventListener('touchstart', this._tap, { passive: true });
+    c.addEventListener('click', this._tap);
     this.nextColor();
   },
 
@@ -79,7 +81,7 @@ const ReactionGame = {
   cleanup() {
     if (this.colorTimer) clearTimeout(this.colorTimer);
     const c = document.getElementById('reaction-container');
-    if (c) { c.removeEventListener('touchstart', this._tap); c.remove(); }
+    if (c) { c.removeEventListener('touchstart', this._tap); c.removeEventListener('click', this._tap); c.remove(); }
     if (this.game.canvas) this.game.canvas.style.display = 'block';
   }
 };

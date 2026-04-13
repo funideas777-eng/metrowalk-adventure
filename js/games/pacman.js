@@ -25,6 +25,22 @@ const PacmanGame = {
     };
     canvas.addEventListener('touchstart', this._touchStart, { passive: true });
     canvas.addEventListener('touchend', this._touchEnd, { passive: true });
+    // Keyboard support
+    this._keyDown = e => {
+      const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right' };
+      if (map[e.key]) { this.nextDirection = map[e.key]; e.preventDefault(); }
+    };
+    document.addEventListener('keydown', this._keyDown);
+    // Mouse swipe support
+    this._mouseDown = e => { this.touchStartX = e.clientX; this.touchStartY = e.clientY; };
+    this._mouseUp = e => {
+      const dx = e.clientX - this.touchStartX, dy = e.clientY - this.touchStartY;
+      if (Math.abs(dx) < 15 && Math.abs(dy) < 15) return;
+      if (Math.abs(dx) > Math.abs(dy)) this.nextDirection = dx > 0 ? 'right' : 'left';
+      else this.nextDirection = dy > 0 ? 'down' : 'up';
+    };
+    canvas.addEventListener('mousedown', this._mouseDown);
+    canvas.addEventListener('mouseup', this._mouseUp);
   },
 
   startRound() {
@@ -164,6 +180,7 @@ const PacmanGame = {
     if (this.ghostTimer) clearInterval(this.ghostTimer);
     if (this.powerTimer) clearTimeout(this.powerTimer);
     const c = this.game.canvas;
-    if (c) { c.removeEventListener('touchstart', this._touchStart); c.removeEventListener('touchend', this._touchEnd); }
+    if (c) { c.removeEventListener('touchstart', this._touchStart); c.removeEventListener('touchend', this._touchEnd); c.removeEventListener('mousedown', this._mouseDown); c.removeEventListener('mouseup', this._mouseUp); }
+    document.removeEventListener('keydown', this._keyDown);
   }
 };

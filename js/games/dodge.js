@@ -17,6 +17,11 @@ const DodgeGame = {
     };
     game.canvas.addEventListener('touchmove', this._touchMove, { passive: true });
     game.canvas.addEventListener('touchstart', this._touchMove, { passive: true });
+    this._mouseMove = e => {
+      const rect = game.canvas.getBoundingClientRect();
+      this.player.x = Math.max(this.player.width/2, Math.min(this.canvasW - this.player.width/2, e.clientX - rect.left));
+    };
+    game.canvas.addEventListener('mousemove', this._mouseMove);
     this.startSpawning();
     this.surviveCounter = setInterval(() => {
       if (!this.game.running) return;
@@ -94,6 +99,6 @@ const DodgeGame = {
     if (this.coinTimer) clearInterval(this.coinTimer);
     if (this.surviveCounter) clearInterval(this.surviveCounter);
     const c = this.game.canvas;
-    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); }
+    if (c) { c.removeEventListener('touchmove', this._touchMove); c.removeEventListener('touchstart', this._touchMove); c.removeEventListener('mousemove', this._mouseMove); }
   }
 };

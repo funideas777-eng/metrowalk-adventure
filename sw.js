@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metrowalk-v1';
+const CACHE_NAME = 'metrowalk-v2';
 const STATIC_ASSETS = [
   '/metrowalk-adventure/index.html','/metrowalk-adventure/map.html','/metrowalk-adventure/game.html',
   '/metrowalk-adventure/photo-task.html','/metrowalk-adventure/scoreboard.html','/metrowalk-adventure/admin.html',
