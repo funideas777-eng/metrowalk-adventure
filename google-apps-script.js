@@ -1,5 +1,5 @@
-const SPREADSHEET_ID = '';
-const DRIVE_FOLDER_ID = '';
+const SPREADSHEET_ID = '1T2W6y_h98vynj0GDBVkndW-SvFW0tC07cfyg328L1vM';
+const DRIVE_FOLDER_ID = '1KGxeqM60AtekJQCLqHhrIdIVyb9FLF6y';
 const ADMIN_PASSWORD = '11201120';
 
 function doGet(e) {

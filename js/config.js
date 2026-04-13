@@ -9,10 +9,10 @@ const CONFIG = {
   VENUE: '大江購物中心（桃園市中壢區中園路二段501號）',
 
   API_URL: {
-    READ:  '',
-    WRITE: '',
-    PHOTO: '',
-    ADMIN: ''
+    READ:  'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
+    WRITE: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
+    PHOTO: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
+    ADMIN: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec'
   },
 
   CACHE_TTL: {
