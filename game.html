@@ -20,15 +20,43 @@
     .game-countdown { position:absolute; top:0;left:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:55; }
     .game-countdown-num { font-size:120px; font-weight:900; color:white; animation:pulse 0.5s; }
     .game-canvas-container { width:100%; height:calc(100vh - 100px); height:calc(100dvh - 100px); position:relative; display:flex; align-items:center; justify-content:center; overflow-y:auto; z-index:1; }
+    .game-canvas-container.has-dpad { height:calc(100vh - 250px); height:calc(100dvh - 250px); }
     .game-canvas-container canvas { display:block; max-width:100%; max-height:100%; touch-action:none; }
-    .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.9); z-index:60; color:white; text-align:center; padding:32px; }
-    .result-icon { font-size:64px; margin-bottom:16px; animation:bounce 1s ease 2; }
-    .result-score { font-size:64px; font-weight:900; color:var(--primary); }
-    .result-label { font-size:14px; color:rgba(255,255,255,0.6); margin-top:8px; }
-    .result-bonus { font-size:16px; color:var(--accent); font-weight:700; margin-top:8px; }
+    /* Lives */
+    .lives-display { display:flex; gap:2px; align-items:center; }
+    .lives-display .heart { font-size:16px; transition:transform 0.3s,opacity 0.3s; }
+    .lives-display .heart.lost { opacity:0.2; transform:scale(0.6); }
+    /* Result */
+    .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.92); z-index:60; color:white; text-align:center; padding:24px; overflow-y:auto; }
+    .result-icon { font-size:64px; margin-bottom:12px; animation:bounce 1s ease 2; }
+    .result-score { font-size:56px; font-weight:900; color:var(--primary); }
+    .result-label { font-size:14px; color:rgba(255,255,255,0.6); margin-top:6px; }
+    .result-threshold { font-size:12px; color:rgba(255,255,255,0.35); margin-top:8px; }
+    .result-fail { color:#f44336; font-size:15px; font-weight:700; margin-top:10px; }
+    .result-bonus { margin-top:14px; }
+    .trophy-row { display:flex; align-items:center; gap:8px; justify-content:center; margin:3px 0; font-size:13px; }
+    .trophy-icon { font-size:18px; }
+    .trophy-text { color:rgba(255,255,255,0.6); }
+    .trophy-pts { color:var(--accent); font-weight:700; }
+    .btn-submit { transition:all 0.3s; min-width:200px; }
+    .btn-submit:active { transform:scale(0.95); }
+    .btn-submit.submitting { background:#ff9800!important; }
+    .btn-submit.submitted { background:#4CAF50!important; }
+    /* D-Pad */
+    .dpad-container { display:none; position:fixed; bottom:0; left:0; right:0; height:150px; z-index:10; padding-bottom:env(safe-area-inset-bottom,0); background:linear-gradient(transparent,rgba(0,0,0,0.6)); }
+    .dpad-container.active { display:flex; align-items:center; justify-content:center; }
+    .dpad { position:relative; width:150px; height:130px; }
+    .dpad-btn { position:absolute; width:52px; height:52px; border-radius:14px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.3); color:white; font-size:24px; display:flex; align-items:center; justify-content:center; cursor:pointer; user-select:none; -webkit-user-select:none; -webkit-tap-highlight-color:transparent; transition:background 0.1s; }
+    .dpad-btn:active,.dpad-btn.pressed { background:rgba(255,255,255,0.45); }
+    .dpad-btn.up { top:0; left:50%; transform:translateX(-50%); }
+    .dpad-btn.down { bottom:0; left:50%; transform:translateX(-50%); }
+    .dpad-btn.left { left:0; top:50%; transform:translateY(-50%); }
+    .dpad-btn.right { right:0; top:50%; transform:translateY(-50%); }
     .round-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:linear-gradient(135deg,var(--primary),var(--accent)); color:white; font-size:28px; font-weight:900; padding:16px 40px; border-radius:20px; z-index:45; pointer-events:none; animation:roundBannerAnim 1.5s ease forwards; }
     @keyframes roundBannerAnim { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 40%{transform:translate(-50%,-50%) scale(1)} 80%{opacity:1} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)} }
     .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    /* Pause overlay */
+    .pause-label { font-size:28px; font-weight:900; color:white; margin-bottom:20px; letter-spacing:2px; }
   </style>
 </head>
 <body>
@@ -41,11 +69,15 @@
   <div class="game-hud">
     <div class="hud-item"><div class="hud-label">分數</div><div class="hud-value" id="hudScore">0</div></div>
     <div class="hud-item"><div class="hud-label">時間</div><div class="hud-value" id="hudTime">--</div></div>
-    <div class="hud-item"><div class="hud-label">連擊</div><div class="hud-value" id="hudCombo">0</div></div>
+    <div class="hud-item">
+      <div class="hud-label">命</div>
+      <div class="hud-value lives-display" id="hudLives">
+        <span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span>
+      </div>
+    </div>
   </div>
   <div class="danmaku-overlay" id="danmakuContainer"></div>
 
-  <!-- 載入/介紹畫面 -->
   <div class="game-intro" id="gameIntro">
     <div class="game-intro-icon" id="introIcon"></div>
     <div class="game-intro-title" id="introTitle"></div>
@@ -59,25 +91,41 @@
     <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
   </div>
 
-  <!-- 倒數 -->
   <div class="game-countdown" id="gameCountdown"><div class="game-countdown-num" id="countdownNum">3</div></div>
+  <div class="game-canvas-container" id="canvasContainer"><canvas id="gameCanvas"></canvas></div>
 
-  <!-- 遊戲區域 -->
-  <div class="game-canvas-container"><canvas id="gameCanvas"></canvas></div>
+  <!-- D-Pad -->
+  <div class="dpad-container" id="dpadContainer">
+    <div class="dpad">
+      <div class="dpad-btn up" ontouchstart="dpadInput('up');this.classList.add('pressed')" ontouchend="this.classList.remove('pressed')" onmousedown="dpadInput('up')">▲</div>
+      <div class="dpad-btn left" ontouchstart="dpadInput('left');this.classList.add('pressed')" ontouchend="this.classList.remove('pressed')" onmousedown="dpadInput('left')">◀</div>
+      <div class="dpad-btn right" ontouchstart="dpadInput('right');this.classList.add('pressed')" ontouchend="this.classList.remove('pressed')" onmousedown="dpadInput('right')">▶</div>
+      <div class="dpad-btn down" ontouchstart="dpadInput('down');this.classList.add('pressed')" ontouchend="this.classList.remove('pressed')" onmousedown="dpadInput('down')">▼</div>
+    </div>
+  </div>
 
-  <!-- 結算畫面 -->
+  <!-- Result -->
   <div class="game-result" id="gameResult">
-    <div class="result-icon">🎉</div>
+    <div class="result-icon" id="resultIcon">🎉</div>
     <div style="font-size:14px;color:rgba(255,255,255,0.5);">最終得分</div>
     <div class="result-score" id="resultScore">0</div>
     <div class="result-label" id="resultCombo"></div>
-    <div class="result-bonus" id="resultBonus"></div>
-    <button class="btn btn-primary btn-lg" style="margin-top:24px;min-width:200px;" onclick="submitAndReturn()">📤 提交分數</button>
-    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
+    <div class="result-threshold" id="resultThreshold"></div>
+    <div class="result-fail" id="resultFail" style="display:none;"></div>
+    <div class="result-bonus" id="resultBonus">
+      <div class="trophy-row"><span class="trophy-icon">🏆</span><span class="trophy-text">第1名</span><span class="trophy-pts">團隊 +500</span></div>
+      <div class="trophy-row"><span class="trophy-icon">🥈</span><span class="trophy-text">第2名</span><span class="trophy-pts">團隊 +400</span></div>
+      <div class="trophy-row"><span class="trophy-icon">🥉</span><span class="trophy-text">第3名</span><span class="trophy-pts">團隊 +300</span></div>
+      <div class="trophy-row"><span class="trophy-icon">🏅</span><span class="trophy-text">第4名</span><span class="trophy-pts">團隊 +200</span></div>
+      <div class="trophy-row"><span class="trophy-icon">🏅</span><span class="trophy-text">第5名</span><span class="trophy-pts">團隊 +100</span></div>
+    </div>
+    <button class="btn btn-primary btn-lg btn-submit" id="btnSubmit" style="margin-top:20px;" onclick="submitAndReturn()">📤 提交分數</button>
+    <button class="btn btn-outline" style="margin-top:10px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
   </div>
 
-  <!-- 設定面板 -->
-  <div id="gameSettings" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:70;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+  <!-- Settings / Pause -->
+  <div id="gameSettings" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:70;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+    <div class="pause-label">⏸️ 暫停中</div>
     <button class="btn btn-primary btn-lg" onclick="closeGameSettings()">▶ 繼續遊戲</button>
     <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.reload()">🔄 重新開始</button>
     <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
@@ -91,7 +139,7 @@
 <script src="js/audio.js"></script>
 <script src="js/chat.js"></script>
 <script>
-  // === 初始化 ===
+  // === Init ===
   if (!Auth.requireLogin()) throw new Error('未登入');
   AudioEngine.init(); API.init();
   try { Chat.init(); Chat.initDanmaku('danmakuContainer'); } catch(e) { console.warn('Chat init failed', e); }
@@ -108,7 +156,14 @@
   document.getElementById('introDesc').textContent = gameConfig.description;
   document.getElementById('introRounds').textContent = gameConfig.hasRounds ? '🔄 回合制：破關後自動進入下一關，難度提升！' : '';
 
-  // === 遊戲引擎對照表 ===
+  // D-Pad for directional games
+  const DPAD_GAMES = ['pacman', 'snake'];
+  if (DPAD_GAMES.includes(gameId)) {
+    document.getElementById('dpadContainer').classList.add('active');
+    document.getElementById('canvasContainer').classList.add('has-dpad');
+  }
+
+  // === Engine Map ===
   const GAME_ENGINES = {
     pacman:{file:'js/games/pacman.js',engine:'PacmanGame'},
     snake:{file:'js/games/snake.js',engine:'SnakeGame'},
@@ -129,13 +184,12 @@
   const btnStart = document.getElementById('btnStart');
   const loadingMsg = document.getElementById('loadingMsg');
 
-  // === 載入遊戲腳本 (fetch+eval 確保全域變數可用) ===
+  // === Load Script ===
   function loadGameScript() {
     if (!gameEntry) return Promise.resolve(null);
     return fetch(gameEntry.file + '?v=' + Date.now())
       .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
       .then(function(code) {
-        // 用 Function 執行確保是全域作用域
         new Function(code)();
         var engine = window[gameEntry.engine];
         if (!engine) throw new Error('Engine not found after eval: ' + gameEntry.engine);
@@ -143,7 +197,6 @@
       });
   }
 
-  // 載入並啟用按鈕
   loadGameScript().then(engine => {
     gameEngine = engine;
     btnStart.disabled = false;
@@ -158,34 +211,36 @@
     btnStart.disabled = false;
     btnStart.innerHTML = '🔄 重新載入';
     btnStart.onclick = () => {
-      // 清除 SW 快取後重載
       if ('caches' in window) {
         caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
-      } else {
-        window.location.reload();
-      }
+      } else { window.location.reload(); }
     };
   });
 
   // === GameState ===
   const GameState = {
-    running: false, score: 0, combo: 0, maxCombo: 0,
+    running: false, paused: false,
+    score: 0, combo: 0, maxCombo: 0,
+    lives: 3, maxLives: 3,
     timeLeft: gameConfig.duration || 60,
     canvas: null, ctx: null, timer: null, animFrame: null,
     round: 1,
+
     updateHUD() {
       document.getElementById('hudScore').textContent = this.score;
       document.getElementById('hudTime').textContent = this.timeLeft;
-      document.getElementById('hudCombo').textContent = this.combo;
-      // 時間警告
-      const timeEl = document.getElementById('hudTime');
-      if (this.timeLeft <= 10) { timeEl.style.color = '#f44336'; }
-      else if (this.timeLeft <= 20) { timeEl.style.color = '#ff9800'; }
-      else { timeEl.style.color = 'white'; }
-      // 連擊高亮
-      const comboEl = document.getElementById('hudCombo');
-      comboEl.style.color = this.combo >= 5 ? '#FFD740' : this.combo >= 3 ? '#ff9800' : 'white';
+      // Lives
+      var livesEl = document.getElementById('hudLives');
+      var h = '';
+      for (var i = 0; i < this.maxLives; i++) h += '<span class="heart' + (i >= this.lives ? ' lost' : '') + '">❤️</span>';
+      livesEl.innerHTML = h;
+      // Time color
+      var timeEl = document.getElementById('hudTime');
+      if (this.timeLeft <= 10) timeEl.style.color = '#f44336';
+      else if (this.timeLeft <= 20) timeEl.style.color = '#ff9800';
+      else timeEl.style.color = 'white';
     },
+
     addScore(pts) {
       this.score += pts;
       this.updateHUD();
@@ -199,49 +254,67 @@
       if (navigator.vibrate) navigator.vibrate(30);
     },
     resetCombo() { this.combo = 0; this.updateHUD(); },
+
+    loseLife() {
+      this.lives--;
+      this.updateHUD();
+      AudioEngine.penalty();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      if (this.lives <= 0) {
+        this.running = false;
+      }
+      return this.lives;
+    },
+
     showRoundBanner(round) {
       this.round = round;
       document.getElementById('roundDisplay').textContent = 'R' + round;
-      const banner = document.createElement('div');
+      var banner = document.createElement('div');
       banner.className = 'round-banner';
       banner.textContent = '🔥 Round ' + round;
       document.body.appendChild(banner);
       AudioEngine.roundClear();
       if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
-      setTimeout(() => banner.remove(), 1500);
+      setTimeout(function() { banner.remove(); }, 1500);
     }
   };
 
-  // === Canvas 初始化 ===
+  // === D-Pad ===
+  function dpadInput(dir) {
+    if (!gameEngine || !GameState.running || GameState.paused) return;
+    if (gameEngine.setDirection) gameEngine.setDirection(dir);
+    AudioEngine.tapButton();
+    if (navigator.vibrate) navigator.vibrate(15);
+  }
+
+  // === Canvas ===
   const canvas = document.getElementById('gameCanvas');
-  const container = canvas.parentElement;
+  const containerEl = document.getElementById('canvasContainer');
   function resizeCanvas() {
-    canvas.width = Math.min(400, container.clientWidth);
-    canvas.height = Math.min(600, container.clientHeight > 20 ? container.clientHeight - 20 : 500);
+    canvas.width = Math.min(400, containerEl.clientWidth);
+    canvas.height = Math.min(600, containerEl.clientHeight > 20 ? containerEl.clientHeight - 20 : 500);
   }
   resizeCanvas();
   GameState.canvas = canvas;
   GameState.ctx = canvas.getContext('2d');
 
-  // === 倒數計時 ===
+  // === Countdown ===
   function startCountdown() {
     if (!gameEngine) {
       loadingMsg.textContent = '引擎未就緒，重新載入中...';
       if ('caches' in window) {
         caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
-      } else {
-        window.location.reload();
-      }
+      } else { window.location.reload(); }
       return;
     }
     document.getElementById('gameIntro').style.display = 'none';
-    const cd = document.getElementById('gameCountdown');
+    var cd = document.getElementById('gameCountdown');
     cd.style.display = 'flex';
-    let count = 3;
+    var count = 3;
     document.getElementById('countdownNum').textContent = count;
     AudioEngine.countdown();
     if (navigator.vibrate) navigator.vibrate(50);
-    const ci = setInterval(() => {
+    var ci = setInterval(function() {
       count--;
       if (count > 0) {
         document.getElementById('countdownNum').textContent = count;
@@ -255,12 +328,15 @@
     }, 1000);
   }
 
-  // === 開始遊戲 ===
+  // === Start ===
   function startGame() {
     GameState.running = true;
+    GameState.paused = false;
     GameState.score = 0;
     GameState.combo = 0;
     GameState.maxCombo = 0;
+    GameState.lives = 3;
+    GameState.maxLives = 3;
     GameState.round = 1;
     GameState.timeLeft = gameConfig.duration || 60;
     GameState.updateHUD();
@@ -268,7 +344,6 @@
     AudioEngine.gameStart();
     if (navigator.vibrate) navigator.vibrate(200);
 
-    // 初始化遊戲引擎
     try {
       gameEngine.init(GameState);
     } catch (err) {
@@ -278,54 +353,84 @@
       return;
     }
 
-    // 計時器
-    GameState.timer = setInterval(() => {
+    // Timer
+    GameState.timer = setInterval(function() {
+      if (GameState.paused) return;
       if (!GameState.running) { endGame(); return; }
       GameState.timeLeft--;
       GameState.updateHUD();
-      // 時間警告音效+震動
       if (GameState.timeLeft === 10) { AudioEngine.playTone(440, 0.2, 'square', 0.15); if (navigator.vibrate) navigator.vibrate([100,50,100]); }
       else if (GameState.timeLeft <= 5 && GameState.timeLeft > 0) { AudioEngine.playTone(880, 0.1, 'square', 0.2); if (navigator.vibrate) navigator.vibrate(50); }
       if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); }
     }, 1000);
 
-    // 遊戲循環
-    (function loop() {
-      if (!GameState.running) return;
-      try {
-        if (gameEngine.update) gameEngine.update();
-        if (gameEngine.render) gameEngine.render();
-      } catch (err) { console.error('Game loop error:', err); }
+    // Game loop
+    function loop() {
+      if (!GameState.running) { checkGameEnd(); return; }
+      if (!GameState.paused) {
+        try {
+          if (gameEngine.update) gameEngine.update();
+          if (gameEngine.render) gameEngine.render();
+        } catch (err) { console.error('Game loop error:', err); }
+      }
       GameState.animFrame = requestAnimationFrame(loop);
-    })();
+    }
+    GameState.animFrame = requestAnimationFrame(loop);
   }
 
-  // === 結束遊戲 ===
-  function endGame() {
+  // Check if game ended (lives = 0) via game loop
+  function checkGameEnd() {
     if (!GameState.running && GameState.timer) {
-      clearInterval(GameState.timer);
-      GameState.timer = null;
+      endGame();
     }
+  }
+
+  // === End Game ===
+  function endGame() {
+    if (GameState.timer) { clearInterval(GameState.timer); GameState.timer = null; }
     GameState.running = false;
-    if (GameState.timer) clearInterval(GameState.timer);
-    if (GameState.animFrame) cancelAnimationFrame(GameState.animFrame);
+    if (GameState.animFrame) { cancelAnimationFrame(GameState.animFrame); GameState.animFrame = null; }
     try { if (gameEngine && gameEngine.cleanup) gameEngine.cleanup(); } catch(e) { console.warn('Cleanup error', e); }
 
     AudioEngine.gameEnd();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
 
+    var threshold = gameConfig.threshold || 0;
+    var passed = GameState.score >= threshold;
+
+    document.getElementById('resultIcon').textContent = passed ? '🏆' : '😢';
     document.getElementById('resultScore').textContent = GameState.score;
     document.getElementById('resultCombo').textContent = GameState.maxCombo > 0 ? '🔥 最高連擊 ' + GameState.maxCombo : '';
-    document.getElementById('resultBonus').textContent = '排名前5可為團隊加分 +500/+400/+300/+200/+100';
+    document.getElementById('resultThreshold').textContent = '過關門檻: ' + threshold + ' 分';
+
+    var failEl = document.getElementById('resultFail');
+    var bonusEl = document.getElementById('resultBonus');
+    var submitBtn = document.getElementById('btnSubmit');
+
+    if (passed) {
+      failEl.style.display = 'none';
+      bonusEl.style.display = 'block';
+      submitBtn.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.className = 'btn btn-primary btn-lg btn-submit';
+      submitBtn.textContent = '📤 提交分數';
+    } else {
+      failEl.style.display = 'block';
+      failEl.textContent = '未達過關門檻 (' + threshold + '分)，無法提交分數';
+      bonusEl.style.display = 'none';
+      submitBtn.style.display = 'none';
+    }
+
     document.getElementById('gameResult').style.display = 'flex';
   }
 
-  // === 提交分數 ===
+  // === Submit ===
   async function submitAndReturn() {
-    const btn = event.target;
+    var btn = document.getElementById('btnSubmit');
     btn.disabled = true;
-    btn.textContent = '提交中...';
-    const session = Auth.getSession();
+    btn.className = 'btn btn-primary btn-lg btn-submit submitting';
+    btn.textContent = '⏳ 提交中...';
+    var session = Auth.getSession();
     try {
       await API.post('WRITE', {
         action: 'submitScore',
@@ -335,51 +440,57 @@
         gameId: gameId,
         score: GameState.score
       });
+      btn.className = 'btn btn-primary btn-lg btn-submit submitted';
+      btn.textContent = '✅ 已提交成功！';
       AudioEngine.uploadSuccess();
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     } catch (err) {
       console.error('Submit error:', err);
+      btn.className = 'btn btn-primary btn-lg btn-submit';
+      btn.textContent = '❌ 提交失敗，點擊重試';
+      btn.disabled = false;
     }
-    window.location.href = 'map.html';
   }
 
-  // === 設定面板 ===
+  // === Pause ===
   function showGameSettings() {
-    if (GameState.running) {
-      // 暫停計時
-      if (GameState.timer) { clearInterval(GameState.timer); GameState.timer = null; }
-    }
+    GameState.paused = true;
+    if (GameState.animFrame) { cancelAnimationFrame(GameState.animFrame); GameState.animFrame = null; }
     document.getElementById('gameSettings').style.display = 'flex';
     AudioEngine.tapButton();
   }
   function closeGameSettings() {
     document.getElementById('gameSettings').style.display = 'none';
-    if (GameState.running && !GameState.timer) {
-      // 恢復計時
-      GameState.timer = setInterval(() => {
-        if (!GameState.running) { endGame(); return; }
-        GameState.timeLeft--;
-        GameState.updateHUD();
-        if (GameState.timeLeft <= 5 && GameState.timeLeft > 0) { AudioEngine.playTone(880, 0.1, 'square', 0.2); }
-        if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); }
-      }, 1000);
+    GameState.paused = false;
+    if (GameState.running) {
+      // Restart game loop
+      function loop() {
+        if (!GameState.running) { checkGameEnd(); return; }
+        if (!GameState.paused) {
+          try {
+            if (gameEngine.update) gameEngine.update();
+            if (gameEngine.render) gameEngine.render();
+          } catch (err) { console.error('Game loop error:', err); }
+        }
+        GameState.animFrame = requestAnimationFrame(loop);
+      }
+      GameState.animFrame = requestAnimationFrame(loop);
     }
     AudioEngine.tapButton();
   }
 
-  // === 鍵盤支援 ===
-  document.addEventListener('keydown', (e) => {
-    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
-    if (map[e.key]) e.preventDefault();
+  // === Keyboard ===
+  document.addEventListener('keydown', function(e) {
+    var map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
+    if (map[e.key]) { e.preventDefault(); dpadInput(map[e.key]); }
+    if (e.key === 'Escape') {
+      if (document.getElementById('gameSettings').style.display === 'flex') closeGameSettings();
+      else if (GameState.running) showGameSettings();
+    }
   });
 </script>
 <script>
-  // 強制更新 Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then(reg => {
-      reg.update();
-    });
-  }
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(function(r) { r.update(); }); }
 </script>
 </body>
 </html>

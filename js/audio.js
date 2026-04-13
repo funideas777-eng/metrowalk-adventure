@@ -199,6 +199,43 @@ const AudioEngine = {
     if (navigator.vibrate) navigator.vibrate(30);
   },
 
+  // === 弓箭 ===
+  bowDraw() {
+    this.playSweep(200, 400, 0.3, 'triangle', 0.1);
+    if (navigator.vibrate) navigator.vibrate(30);
+  },
+  arrowShoot() {
+    this.playSweep(400, 1200, 0.15, 'sine', 0.2);
+    this.playNoise(0.05, 0.1);
+    if (navigator.vibrate) navigator.vibrate(40);
+  },
+  arrowHit() {
+    this.playTone(800, 0.06, 'square', 0.2);
+    this.playNoise(0.04, 0.12);
+    if (navigator.vibrate) navigator.vibrate(50);
+  },
+
+  // === 晶圓 ===
+  waferStep() {
+    this.playTone(600, 0.08, 'sine', 0.15);
+    if (navigator.vibrate) navigator.vibrate(20);
+  },
+  waferComplete() {
+    this.playSequence([[523, 80], [659, 80], [784, 120]], 80);
+    if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
+  },
+  waferSpoil() {
+    this.playSweep(500, 150, 0.3, 'sawtooth', 0.15);
+    if (navigator.vibrate) navigator.vibrate([100, 50, 150]);
+  },
+
+  // === 色彩 ===
+  stroopSmash() {
+    this.playTone(700, 0.06, 'square', 0.18);
+    this.playNoise(0.04, 0.1);
+    if (navigator.vibrate) navigator.vibrate(40);
+  },
+
   // === 系統 ===
   shutter() {
     this.playNoise(0.15, 0.2);
