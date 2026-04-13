@@ -11,7 +11,8 @@ function doGet(e) {
     getUnlocks: handleGetUnlocks, getConfig: handleGetConfig,
     getDashboard: handleGetDashboard, getChat: handleGetChat,
     getTeamLocations: handleGetTeamLocations, getPlayerTasks: handleGetPlayerTasks,
-    getPhotoStatus: handleGetPhotoStatus, getPendingPhotos: handleGetPendingPhotos
+    getPhotoStatus: handleGetPhotoStatus, getPendingPhotos: handleGetPendingPhotos,
+    initSpreadsheet: () => { initSpreadsheet(); return { success: true, message: 'Spreadsheet initialized with 60 teams' }; }
   };
   const handler = handlers[action];
   if (!handler) return jsonResponse({ error: 'Unknown action: ' + action });
