@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#FF9800">
+  <link rel="manifest" href="manifest.json">
+  <title>拍照打卡 - 大江購物冒險</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background:#1a1a2e; }
+    .photo-page { min-height:100vh; color:white; }
+    .photo-content { padding:20px; max-width:420px; margin:0 auto; }
+    .photo-preview { width:100%; aspect-ratio:4/3; border-radius:16px; background:#2d2d44; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:16px; }
+    .photo-preview img { width:100%; height:100%; object-fit:cover; }
+    .photo-actions { display:flex; gap:12px; margin-bottom:20px; }
+    .photo-actions .btn { flex:1; }
+    .status-card { background:rgba(255,255,255,0.08); border-radius:16px; padding:20px; text-align:center; margin-bottom:16px; }
+    .status-icon { font-size:48px; margin-bottom:8px; }
+    .status-title { font-size:18px; font-weight:700; margin-bottom:4px; }
+    .status-desc { font-size:13px; color:rgba(255,255,255,0.6); }
+    .status-pending { border:2px solid #ff9800; }
+    .status-approved { border:2px solid #4caf50; }
+    .status-rejected { border:2px solid #f44336; }
+    .upload-progress { width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; margin:12px 0; }
+    .upload-progress-bar { height:100%; background:var(--primary); border-radius:3px; transition:width 0.3s; width:0; }
+  </style>
+</head>
+<body>
+<div class="photo-page">
+  <div class="top-bar" style="background:rgba(0,0,0,0.5);"><button class="top-bar-back" onclick="window.location.href='map.html'">←</button><div class="top-bar-title">📸 拍照打卡</div><div style="width:40px;"></div></div>
+  <div class="photo-content">
+    <div id="captureSection">
+      <div class="status-card"><div class="status-icon">📸</div><div class="status-title">拍攝現場照片</div><div class="status-desc">請使用相機拍攝當前位置的照片<br>僅限即時拍攝，無法從圖庫選取</div></div>
+      <div class="photo-preview" id="photoPreview"><div style="text-align:center;color:rgba(255,255,255,0.4);"><div style="font-size:64px">📷</div><div style="font-size:14px">尚未拍攝</div></div></div>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="handleCapture(this)">
+      <div class="photo-actions"><button class="btn btn-primary btn-lg" onclick="document.getElementById('cameraInput').click()">📷 拍照</button><button class="btn btn-accent btn-lg" id="uploadBtn" onclick="uploadPhoto()" disabled>⬆ 上傳</button></div>
+      <div class="upload-progress" id="uploadProgress" style="display:none;"><div class="upload-progress-bar" id="uploadBar"></div></div>
+    </div>
+    <div id="statusSection" style="display:none;">
+      <div class="status-card" id="statusCard"><div class="status-icon" id="statusIcon">⏳</div><div class="status-title" id="statusTitle">等待驗證</div><div class="status-desc" id="statusDesc">管理員正在審核你的照片</div></div>
+      <div class="photo-preview" id="uploadedPreview"></div>
+      <div id="retakeSection" style="display:none;margin-top:16px;"><button class="btn btn-primary btn-block btn-lg" onclick="retakePhoto()">📷 重新拍照</button></div>
+      <button class="btn btn-outline btn-block" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
+    </div>
+  </div>
+</div>
+<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script>
+<script>
+  if (!Auth.requireLogin()) throw new Error('未登入');
+  AudioEngine.init(); API.init();
+  const session = Auth.getSession();
+  let photoData = null, photoSubmissionId = localStorage.getItem('metrowalk_photo_submission'), statusPollTimer = null;
+  if (photoSubmissionId) { showStatusView(); startStatusPolling(); }
+
+  function handleCapture(input) {
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas'), maxW = CONFIG.PHOTO.maxWidth;
+        let w = img.width, h = img.height; if (w > maxW) { h = h*maxW/w; w = maxW; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        photoData = canvas.toDataURL('image/jpeg', CONFIG.PHOTO.quality).split(',')[1];
+        document.getElementById('photoPreview').innerHTML = `<img src="${canvas.toDataURL('image/jpeg', CONFIG.PHOTO.quality)}">`;
+        document.getElementById('uploadBtn').disabled = false; AudioEngine.shutter();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function uploadPhoto() {
+    if (!photoData) return;
+    const btn = document.getElementById('uploadBtn'); btn.disabled = true; btn.textContent = '上傳中...';
+    const bar = document.getElementById('uploadBar'); document.getElementById('uploadProgress').style.display = 'block'; bar.style.width = '30%';
+    try {
+      bar.style.width = '60%';
+      const r = await API.post('PHOTO', { action:'uploadPhoto', photoData, playerId:session.playerId, playerName:session.name, teamId:session.teamId });
+      bar.style.width = '80%';
+      if (r && r.photoUrl) {
+        const s = await API.post('WRITE', { action:'submitPhotoTask', playerId:session.playerId, playerName:session.name, teamId:session.teamId, gameId:'photo', photoUrl:r.photoUrl });
+        bar.style.width = '100%'; AudioEngine.uploadSuccess();
+        if (s && s.submissionId) { photoSubmissionId = s.submissionId; localStorage.setItem('metrowalk_photo_submission', photoSubmissionId); }
+        setTimeout(() => { showStatusView(); startStatusPolling(); }, 500);
+      } else throw new Error('fail');
+    } catch { alert('上傳失敗'); btn.disabled = false; btn.textContent = '⬆ 上傳'; document.getElementById('uploadProgress').style.display = 'none'; }
+  }
+
+  function showStatusView() { document.getElementById('captureSection').style.display = 'none'; document.getElementById('statusSection').style.display = 'block'; }
+  function retakePhoto() { localStorage.removeItem('metrowalk_photo_submission'); photoSubmissionId = null; if (statusPollTimer) clearInterval(statusPollTimer); document.getElementById('captureSection').style.display = 'block'; document.getElementById('statusSection').style.display = 'none'; photoData = null; document.getElementById('photoPreview').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);"><div style="font-size:64px">📷</div><div style="font-size:14px">尚未拍攝</div></div>'; document.getElementById('uploadBtn').disabled = true; document.getElementById('uploadBtn').textContent = '⬆ 上傳'; document.getElementById('uploadProgress').style.display = 'none'; }
+  function startStatusPolling() { checkStatus(); statusPollTimer = setInterval(checkStatus, 5000); }
+  async function checkStatus() {
+    try {
+      const d = await API.get('getPhotoStatus', { action:'getPhotoStatus', playerId:session.playerId, gameId:'photo' }, 0);
+      if (!d || !d.submission) return;
+      const s = d.submission, card = document.getElementById('statusCard'), icon = document.getElementById('statusIcon'), title = document.getElementById('statusTitle'), desc = document.getElementById('statusDesc'), retake = document.getElementById('retakeSection'), preview = document.getElementById('uploadedPreview');
+      if (s.thumbUrl || s.photoUrl) preview.innerHTML = `<img src="${s.thumbUrl||s.photoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;">`;
+      if (s.status === 'approved') { card.className='status-card status-approved'; icon.textContent='✅'; title.textContent='驗證通過！'; desc.textContent=`已獲得 ${s.points||300} 分`; retake.style.display='none'; if(statusPollTimer) clearInterval(statusPollTimer); }
+      else if (s.status === 'rejected') { card.className='status-card status-rejected'; icon.textContent='❌'; title.textContent='驗證未通過'; desc.textContent='請重新拍攝'; retake.style.display='block'; }
+      else { card.className='status-card status-pending'; icon.textContent='⏳'; title.textContent='等待驗證中...'; desc.textContent='管理員正在審核'; retake.style.display='none'; }
+    } catch {}
+  }
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>

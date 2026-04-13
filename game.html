@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <link rel="manifest" href="manifest.json">
+  <title>遊戲 - 大江購物冒險</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    body { background:#1a1a2e; }
+    .game-page { min-height:100vh; position:relative; overflow:hidden; }
+    .danmaku-overlay { position:absolute; top:60px; left:0; right:0; height:120px; pointer-events:none; overflow:hidden; z-index:5; }
+    .game-intro { position:absolute; top:0;left:0;right:0;bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:50; color:white; padding:32px; text-align:center; }
+    .game-intro-icon { font-size:64px; margin-bottom:16px; }
+    .game-intro-title { font-size:28px; font-weight:900; margin-bottom:8px; }
+    .game-intro-desc { font-size:14px; color:rgba(255,255,255,0.7); margin-bottom:8px; line-height:1.6; }
+    .game-intro-rounds { font-size:13px; color:var(--accent); margin-bottom:24px; }
+    .game-countdown { position:absolute; top:0;left:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:40; }
+    .game-countdown-num { font-size:120px; font-weight:900; color:white; animation:pulse 0.5s; }
+    .game-canvas-container { width:100%; height:calc(100vh - 100px); position:relative; display:flex; align-items:center; justify-content:center; }
+    .game-canvas-container canvas { display:block; max-width:100%; max-height:100%; touch-action:none; }
+    .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:60; color:white; text-align:center; padding:32px; }
+    .result-score { font-size:64px; font-weight:900; color:var(--primary); }
+    .result-label { font-size:14px; color:rgba(255,255,255,0.6); margin-top:8px; }
+    .result-bonus { font-size:16px; color:var(--accent); font-weight:700; margin-top:8px; }
+  </style>
+</head>
+<body>
+<div class="game-page">
+  <div class="top-bar" style="background:rgba(0,0,0,0.5);"><button class="top-bar-back" onclick="showGameSettings()">⚙️</button><div class="top-bar-title" id="gameTitle">🎮</div><div style="width:40px;"></div></div>
+  <div class="game-hud">
+    <div class="hud-item"><div class="hud-label">分數</div><div class="hud-value" id="hudScore">0</div></div>
+    <div class="hud-item"><div class="hud-label">時間</div><div class="hud-value" id="hudTime">--</div></div>
+    <div class="hud-item"><div class="hud-label">連擊</div><div class="hud-value" id="hudCombo">0</div></div>
+  </div>
+  <div class="danmaku-overlay" id="danmakuContainer"></div>
+  <div class="game-intro" id="gameIntro">
+    <div class="game-intro-icon" id="introIcon"></div>
+    <div class="game-intro-title" id="introTitle"></div>
+    <div class="game-intro-desc" id="introDesc"></div>
+    <div class="game-intro-rounds" id="introRounds"></div>
+    <button class="btn btn-primary btn-lg" onclick="startCountdown()">開始遊戲</button>
+    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">返回地圖</button>
+  </div>
+  <div class="game-countdown" id="gameCountdown"><div class="game-countdown-num" id="countdownNum">3</div></div>
+  <div class="game-canvas-container"><canvas id="gameCanvas"></canvas></div>
+  <div class="game-result" id="gameResult">
+    <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.5);">最終得分</div>
+    <div class="result-score" id="resultScore">0</div>
+    <div class="result-label" id="resultCombo"></div>
+    <div class="result-bonus" id="resultBonus"></div>
+    <button class="btn btn-primary btn-lg" style="margin-top:24px;" onclick="submitAndReturn()">提交分數</button>
+    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">返回地圖</button>
+  </div>
+  <div id="gameSettings" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:70;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+    <button class="btn btn-primary btn-lg" onclick="closeGameSettings()">▶ 繼續</button>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.reload()">🔄 重來</button>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回</button>
+    <button class="btn btn-outline" style="color:#f44336;border-color:rgba(244,67,54,0.3);" onclick="Auth.logout();window.location.href='index.html'">🚪 登出</button>
+  </div>
+</div>
+<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/chat.js"></script>
+<script>
+  if (!Auth.requireLogin()) throw new Error('未登入');
+  AudioEngine.init(); API.init(); Chat.init();
+  Chat.initDanmaku('danmakuContainer');
+  const params = new URLSearchParams(window.location.search);
+  const gameId = params.get('id');
+  const gameConfig = getGameById(gameId);
+  if (!gameConfig) { alert('遊戲不存在'); window.location.href = 'map.html'; }
+  if (gameConfig.type === 'photo') { window.location.href = 'photo-task.html'; }
+  document.getElementById('gameTitle').textContent = `${gameConfig.icon} ${gameConfig.name}`;
+  document.getElementById('introIcon').textContent = gameConfig.icon;
+  document.getElementById('introTitle').textContent = gameConfig.name;
+  document.getElementById('introDesc').textContent = gameConfig.description;
+  document.getElementById('introRounds').textContent = gameConfig.hasRounds ? '🔄 回合制：破關後自動進入下一關，難度提升！' : '';
+
+  const GAME_ENGINES = {
+    pacman:{file:'js/games/pacman.js',engine:'PacmanGame'},
+    snake:{file:'js/games/snake.js',engine:'SnakeGame'},
+    whack:{file:'js/games/whack.js',engine:'WhackGame'},
+    memory:{file:'js/games/memory.js',engine:'MemoryGame'},
+    quiz:{file:'js/games/quiz.js',engine:'QuizGame'},
+    catch:{file:'js/games/catch.js',engine:'CatchGame'},
+    breaker:{file:'js/games/breaker.js',engine:'BreakerGame'},
+    shooter:{file:'js/games/shooter.js',engine:'ShooterGame'},
+    dodge:{file:'js/games/dodge.js',engine:'DodgeGame'},
+    reaction:{file:'js/games/reaction.js',engine:'ReactionGame'},
+    rhythm:{file:'js/games/rhythm.js',engine:'RhythmGame'},
+    puzzle:{file:'js/games/puzzle.js',engine:'PuzzleGame'}
+  };
+  const gameEntry = GAME_ENGINES[gameId]; let gameEngine = null;
+  if (gameEntry) { const s = document.createElement('script'); s.src = gameEntry.file; s.onload = () => { gameEngine = window[gameEntry.engine]; }; document.body.appendChild(s); }
+
+  const GameState = { running:false, score:0, combo:0, maxCombo:0, timeLeft:gameConfig.duration||60, canvas:null, ctx:null, timer:null, animFrame:null,
+    updateHUD() { document.getElementById('hudScore').textContent=this.score; document.getElementById('hudTime').textContent=this.timeLeft; document.getElementById('hudCombo').textContent=this.combo; }
+  };
+  const canvas = document.getElementById('gameCanvas'), container = canvas.parentElement;
+  canvas.width = Math.min(400, container.clientWidth); canvas.height = Math.min(600, container.clientHeight - 20);
+  GameState.canvas = canvas; GameState.ctx = canvas.getContext('2d');
+
+  function startCountdown() {
+    document.getElementById('gameIntro').style.display = 'none';
+    const cd = document.getElementById('gameCountdown'); cd.style.display = 'flex';
+    let count = 3; document.getElementById('countdownNum').textContent = count; AudioEngine.countdown();
+    const ci = setInterval(() => { count--; if (count > 0) { document.getElementById('countdownNum').textContent = count; AudioEngine.countdown(); } else { clearInterval(ci); cd.style.display = 'none'; startGame(); } }, 1000);
+  }
+  function startGame() {
+    GameState.running = true; GameState.score = 0; GameState.combo = 0; GameState.maxCombo = 0;
+    GameState.timeLeft = gameConfig.duration || 60; GameState.updateHUD(); AudioEngine.gameStart();
+    if (gameEngine) gameEngine.init(GameState);
+    GameState.timer = setInterval(() => { if (!GameState.running) { endGame(); return; } GameState.timeLeft--; GameState.updateHUD(); if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); } }, 1000);
+    (function loop() { if (!GameState.running) return; if (gameEngine) { if (gameEngine.update) gameEngine.update(); if (gameEngine.render) gameEngine.render(); } GameState.animFrame = requestAnimationFrame(loop); })();
+  }
+  function endGame() {
+    GameState.running = false;
+    if (GameState.timer) clearInterval(GameState.timer);
+    if (GameState.animFrame) cancelAnimationFrame(GameState.animFrame);
+    if (gameEngine && gameEngine.cleanup) gameEngine.cleanup();
+    AudioEngine.gameEnd();
+    document.getElementById('resultScore').textContent = GameState.score;
+    document.getElementById('resultCombo').textContent = GameState.maxCombo > 0 ? `最高連擊 ${GameState.maxCombo}` : '';
+    document.getElementById('resultBonus').textContent = '排名前5可為團隊加分 +500/+400/+300/+200/+100';
+    document.getElementById('gameResult').style.display = 'flex';
+  }
+  async function submitAndReturn() {
+    const session = Auth.getSession();
+    try { await API.post('WRITE', { action:'submitScore', playerId:session.playerId, playerName:session.name, teamId:session.teamId, gameId, score:GameState.score }); } catch {}
+    window.location.href = 'map.html';
+  }
+  function showGameSettings() { document.getElementById('gameSettings').style.display = 'flex'; }
+  function closeGameSettings() { document.getElementById('gameSettings').style.display = 'none'; }
+</script>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>
