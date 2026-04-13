@@ -11,73 +11,104 @@
     body { background:#1a1a2e; }
     .game-page { min-height:100vh; min-height:100dvh; position:relative; overflow:hidden; }
     .danmaku-overlay { position:absolute; top:60px; left:0; right:0; height:120px; pointer-events:none; overflow:hidden; z-index:5; }
-    .game-intro { position:absolute; top:0;left:0;right:0;bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:50; color:white; padding:32px; text-align:center; }
-    .game-intro-icon { font-size:64px; margin-bottom:16px; }
+    .game-intro { position:absolute; top:0;left:0;right:0;bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.9); z-index:50; color:white; padding:32px; text-align:center; }
+    .game-intro-icon { font-size:72px; margin-bottom:16px; animation:bounce 2s infinite; }
     .game-intro-title { font-size:28px; font-weight:900; margin-bottom:8px; }
     .game-intro-desc { font-size:14px; color:rgba(255,255,255,0.7); margin-bottom:8px; line-height:1.6; }
     .game-intro-rounds { font-size:13px; color:var(--accent); margin-bottom:24px; }
-    .game-countdown { position:absolute; top:0;left:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:40; }
+    .game-loading { font-size:13px; color:rgba(255,255,255,0.5); margin-top:12px; }
+    .game-countdown { position:absolute; top:0;left:0;right:0;bottom:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.8); z-index:55; }
     .game-countdown-num { font-size:120px; font-weight:900; color:white; animation:pulse 0.5s; }
     .game-canvas-container { width:100%; height:calc(100vh - 100px); height:calc(100dvh - 100px); position:relative; display:flex; align-items:center; justify-content:center; overflow-y:auto; z-index:1; }
     .game-canvas-container canvas { display:block; max-width:100%; max-height:100%; touch-action:none; }
-    .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); z-index:60; color:white; text-align:center; padding:32px; }
+    .game-result { position:absolute; top:0;left:0;right:0;bottom:0; display:none; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,0.9); z-index:60; color:white; text-align:center; padding:32px; }
+    .result-icon { font-size:64px; margin-bottom:16px; animation:bounce 1s ease 2; }
     .result-score { font-size:64px; font-weight:900; color:var(--primary); }
     .result-label { font-size:14px; color:rgba(255,255,255,0.6); margin-top:8px; }
     .result-bonus { font-size:16px; color:var(--accent); font-weight:700; margin-top:8px; }
-    .btn-start-game:disabled { opacity:0.6; cursor:not-allowed; }
+    .round-banner { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:linear-gradient(135deg,var(--primary),var(--accent)); color:white; font-size:28px; font-weight:900; padding:16px 40px; border-radius:20px; z-index:45; pointer-events:none; animation:roundBannerAnim 1.5s ease forwards; }
+    @keyframes roundBannerAnim { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.5)} 20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)} 40%{transform:translate(-50%,-50%) scale(1)} 80%{opacity:1} 100%{opacity:0;transform:translate(-50%,-50%) scale(0.8)} }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
   </style>
 </head>
 <body>
 <div class="game-page">
-  <div class="top-bar" style="background:rgba(0,0,0,0.5);"><button class="top-bar-back" onclick="showGameSettings()">⚙️</button><div class="top-bar-title" id="gameTitle">🎮</div><div style="width:40px;"></div></div>
+  <div class="top-bar" style="background:rgba(0,0,0,0.5);">
+    <button class="top-bar-back" onclick="showGameSettings()">⚙️</button>
+    <div class="top-bar-title" id="gameTitle">🎮</div>
+    <div id="roundDisplay" style="width:60px;text-align:center;color:var(--accent);font-size:12px;font-weight:700;"></div>
+  </div>
   <div class="game-hud">
     <div class="hud-item"><div class="hud-label">分數</div><div class="hud-value" id="hudScore">0</div></div>
     <div class="hud-item"><div class="hud-label">時間</div><div class="hud-value" id="hudTime">--</div></div>
     <div class="hud-item"><div class="hud-label">連擊</div><div class="hud-value" id="hudCombo">0</div></div>
   </div>
   <div class="danmaku-overlay" id="danmakuContainer"></div>
+
+  <!-- 載入/介紹畫面 -->
   <div class="game-intro" id="gameIntro">
     <div class="game-intro-icon" id="introIcon"></div>
     <div class="game-intro-title" id="introTitle"></div>
     <div class="game-intro-desc" id="introDesc"></div>
     <div class="game-intro-rounds" id="introRounds"></div>
-    <button class="btn btn-primary btn-lg btn-start-game" id="btnStart" onclick="startCountdown()" disabled>載入中...</button>
-    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">返回地圖</button>
+    <button class="btn btn-primary btn-lg" id="btnStart" disabled style="min-width:200px;">
+      <span class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></span>
+      載入中...
+    </button>
+    <div class="game-loading" id="loadingMsg">正在載入遊戲引擎...</div>
+    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
   </div>
+
+  <!-- 倒數 -->
   <div class="game-countdown" id="gameCountdown"><div class="game-countdown-num" id="countdownNum">3</div></div>
+
+  <!-- 遊戲區域 -->
   <div class="game-canvas-container"><canvas id="gameCanvas"></canvas></div>
+
+  <!-- 結算畫面 -->
   <div class="game-result" id="gameResult">
-    <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+    <div class="result-icon">🎉</div>
     <div style="font-size:14px;color:rgba(255,255,255,0.5);">最終得分</div>
     <div class="result-score" id="resultScore">0</div>
     <div class="result-label" id="resultCombo"></div>
     <div class="result-bonus" id="resultBonus"></div>
-    <button class="btn btn-primary btn-lg" style="margin-top:24px;" onclick="submitAndReturn()">提交分數</button>
-    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">返回地圖</button>
+    <button class="btn btn-primary btn-lg" style="margin-top:24px;min-width:200px;" onclick="submitAndReturn()">📤 提交分數</button>
+    <button class="btn btn-outline" style="margin-top:12px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
   </div>
+
+  <!-- 設定面板 -->
   <div id="gameSettings" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:70;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
-    <button class="btn btn-primary btn-lg" onclick="closeGameSettings()">▶ 繼續</button>
-    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.reload()">🔄 重來</button>
-    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回</button>
+    <button class="btn btn-primary btn-lg" onclick="closeGameSettings()">▶ 繼續遊戲</button>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.reload()">🔄 重新開始</button>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
     <button class="btn btn-outline" style="color:#f44336;border-color:rgba(244,67,54,0.3);" onclick="Auth.logout();window.location.href='index.html'">🚪 登出</button>
   </div>
 </div>
-<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/chat.js"></script>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/chat.js"></script>
 <script>
+  // === 初始化 ===
   if (!Auth.requireLogin()) throw new Error('未登入');
-  AudioEngine.init(); API.init(); Chat.init();
-  Chat.initDanmaku('danmakuContainer');
+  AudioEngine.init(); API.init();
+  try { Chat.init(); Chat.initDanmaku('danmakuContainer'); } catch(e) { console.warn('Chat init failed', e); }
+
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get('id');
   const gameConfig = getGameById(gameId);
-  if (!gameConfig) { alert('遊戲不存在'); window.location.href = 'map.html'; }
-  if (gameConfig.type === 'photo') { window.location.href = 'photo-task.html'; }
-  document.getElementById('gameTitle').textContent = `${gameConfig.icon} ${gameConfig.name}`;
+  if (!gameConfig) { alert('遊戲不存在'); window.location.href = 'map.html'; throw new Error('no game'); }
+  if (gameConfig.type === 'photo') { window.location.href = 'photo-task.html'; throw new Error('redirect'); }
+
+  document.getElementById('gameTitle').textContent = gameConfig.icon + ' ' + gameConfig.name;
   document.getElementById('introIcon').textContent = gameConfig.icon;
   document.getElementById('introTitle').textContent = gameConfig.name;
   document.getElementById('introDesc').textContent = gameConfig.description;
   document.getElementById('introRounds').textContent = gameConfig.hasRounds ? '🔄 回合制：破關後自動進入下一關，難度提升！' : '';
 
+  // === 遊戲引擎對照表 ===
   const GAME_ENGINES = {
     pacman:{file:'js/games/pacman.js',engine:'PacmanGame'},
     snake:{file:'js/games/snake.js',engine:'SnakeGame'},
@@ -92,78 +123,269 @@
     rhythm:{file:'js/games/rhythm.js',engine:'RhythmGame'},
     puzzle:{file:'js/games/puzzle.js',engine:'PuzzleGame'}
   };
-  const gameEntry = GAME_ENGINES[gameId]; let gameEngine = null;
+
+  let gameEngine = null;
+  const gameEntry = GAME_ENGINES[gameId];
   const btnStart = document.getElementById('btnStart');
-  if (gameEntry) {
-    const s = document.createElement('script');
-    s.src = gameEntry.file;
-    s.onload = () => {
-      gameEngine = window[gameEntry.engine];
-      btnStart.disabled = false;
-      btnStart.textContent = '開始遊戲';
-    };
-    s.onerror = () => {
-      btnStart.textContent = '載入失敗，點擊重試';
-      btnStart.disabled = false;
-      btnStart.onclick = () => window.location.reload();
-    };
-    document.body.appendChild(s);
-  } else {
-    btnStart.disabled = false;
-    btnStart.textContent = '開始遊戲';
+  const loadingMsg = document.getElementById('loadingMsg');
+
+  // === 載入遊戲腳本 (帶 cache-busting) ===
+  function loadGameScript() {
+    return new Promise((resolve, reject) => {
+      if (!gameEntry) { resolve(null); return; }
+      const s = document.createElement('script');
+      // 加上版本號避免 SW 快取舊版
+      s.src = gameEntry.file + '?v=' + Date.now();
+      s.onload = () => {
+        const engine = window[gameEntry.engine];
+        if (engine) {
+          resolve(engine);
+        } else {
+          reject(new Error('Engine not found: ' + gameEntry.engine));
+        }
+      };
+      s.onerror = () => reject(new Error('Script load failed: ' + gameEntry.file));
+      document.body.appendChild(s);
+    });
   }
 
-  const GameState = { running:false, score:0, combo:0, maxCombo:0, timeLeft:gameConfig.duration||60, canvas:null, ctx:null, timer:null, animFrame:null,
-    updateHUD() { document.getElementById('hudScore').textContent=this.score; document.getElementById('hudTime').textContent=this.timeLeft; document.getElementById('hudCombo').textContent=this.combo; }
-  };
-  const canvas = document.getElementById('gameCanvas'), container = canvas.parentElement;
-  canvas.width = Math.min(400, container.clientWidth); canvas.height = Math.min(600, container.clientHeight - 20);
-  GameState.canvas = canvas; GameState.ctx = canvas.getContext('2d');
-
-  /* --- Keyboard support (arrow keys / WASD) --- */
-  document.addEventListener('keydown', (e) => {
-    if (!GameState.running) return;
-    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
-    if (map[e.key]) { e.preventDefault(); }
+  // 載入並啟用按鈕
+  loadGameScript().then(engine => {
+    gameEngine = engine;
+    btnStart.disabled = false;
+    btnStart.innerHTML = '🎮 開始遊戲';
+    btnStart.onclick = startCountdown;
+    loadingMsg.textContent = '準備就緒！';
+    loadingMsg.style.color = '#4caf50';
+  }).catch(err => {
+    console.error('Game load error:', err);
+    loadingMsg.textContent = '載入失敗：' + err.message;
+    loadingMsg.style.color = '#f44336';
+    btnStart.disabled = false;
+    btnStart.innerHTML = '🔄 重新載入';
+    btnStart.onclick = () => {
+      // 清除 SW 快取後重載
+      if ('caches' in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
+      } else {
+        window.location.reload();
+      }
+    };
   });
 
-  function startCountdown() {
-    document.getElementById('gameIntro').style.display = 'none';
-    const cd = document.getElementById('gameCountdown'); cd.style.display = 'flex';
-    let count = 3; document.getElementById('countdownNum').textContent = count; AudioEngine.countdown();
-    const ci = setInterval(() => { count--; if (count > 0) { document.getElementById('countdownNum').textContent = count; AudioEngine.countdown(); } else { clearInterval(ci); cd.style.display = 'none'; startGame(); } }, 1000);
+  // === GameState ===
+  const GameState = {
+    running: false, score: 0, combo: 0, maxCombo: 0,
+    timeLeft: gameConfig.duration || 60,
+    canvas: null, ctx: null, timer: null, animFrame: null,
+    round: 1,
+    updateHUD() {
+      document.getElementById('hudScore').textContent = this.score;
+      document.getElementById('hudTime').textContent = this.timeLeft;
+      document.getElementById('hudCombo').textContent = this.combo;
+      // 時間警告
+      const timeEl = document.getElementById('hudTime');
+      if (this.timeLeft <= 10) { timeEl.style.color = '#f44336'; }
+      else if (this.timeLeft <= 20) { timeEl.style.color = '#ff9800'; }
+      else { timeEl.style.color = 'white'; }
+      // 連擊高亮
+      const comboEl = document.getElementById('hudCombo');
+      comboEl.style.color = this.combo >= 5 ? '#FFD740' : this.combo >= 3 ? '#ff9800' : 'white';
+    },
+    addScore(pts) {
+      this.score += pts;
+      this.updateHUD();
+      AudioEngine.scoreUp();
+      if (navigator.vibrate) navigator.vibrate(20);
+    },
+    addCombo() {
+      this.combo++;
+      if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+      AudioEngine.comboHit(this.combo);
+      if (navigator.vibrate) navigator.vibrate(30);
+    },
+    resetCombo() { this.combo = 0; this.updateHUD(); },
+    showRoundBanner(round) {
+      this.round = round;
+      document.getElementById('roundDisplay').textContent = 'R' + round;
+      const banner = document.createElement('div');
+      banner.className = 'round-banner';
+      banner.textContent = '🔥 Round ' + round;
+      document.body.appendChild(banner);
+      AudioEngine.roundClear();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
+      setTimeout(() => banner.remove(), 1500);
+    }
+  };
+
+  // === Canvas 初始化 ===
+  const canvas = document.getElementById('gameCanvas');
+  const container = canvas.parentElement;
+  function resizeCanvas() {
+    canvas.width = Math.min(400, container.clientWidth);
+    canvas.height = Math.min(600, container.clientHeight > 20 ? container.clientHeight - 20 : 500);
   }
-  function startGame() {
+  resizeCanvas();
+  GameState.canvas = canvas;
+  GameState.ctx = canvas.getContext('2d');
+
+  // === 倒數計時 ===
+  function startCountdown() {
     if (!gameEngine) {
-      alert('遊戲引擎尚未載入，請重新整理頁面');
-      window.location.reload();
+      loadingMsg.textContent = '引擎未就緒，重新載入中...';
+      if ('caches' in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
+      } else {
+        window.location.reload();
+      }
       return;
     }
-    GameState.running = true; GameState.score = 0; GameState.combo = 0; GameState.maxCombo = 0;
-    GameState.timeLeft = gameConfig.duration || 60; GameState.updateHUD(); AudioEngine.gameStart();
-    if (gameEngine) gameEngine.init(GameState);
-    GameState.timer = setInterval(() => { if (!GameState.running) { endGame(); return; } GameState.timeLeft--; GameState.updateHUD(); if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); } }, 1000);
-    (function loop() { if (!GameState.running) return; if (gameEngine) { if (gameEngine.update) gameEngine.update(); if (gameEngine.render) gameEngine.render(); } GameState.animFrame = requestAnimationFrame(loop); })();
+    document.getElementById('gameIntro').style.display = 'none';
+    const cd = document.getElementById('gameCountdown');
+    cd.style.display = 'flex';
+    let count = 3;
+    document.getElementById('countdownNum').textContent = count;
+    AudioEngine.countdown();
+    if (navigator.vibrate) navigator.vibrate(50);
+    const ci = setInterval(() => {
+      count--;
+      if (count > 0) {
+        document.getElementById('countdownNum').textContent = count;
+        AudioEngine.countdown();
+        if (navigator.vibrate) navigator.vibrate(50);
+      } else {
+        clearInterval(ci);
+        cd.style.display = 'none';
+        startGame();
+      }
+    }, 1000);
   }
+
+  // === 開始遊戲 ===
+  function startGame() {
+    GameState.running = true;
+    GameState.score = 0;
+    GameState.combo = 0;
+    GameState.maxCombo = 0;
+    GameState.round = 1;
+    GameState.timeLeft = gameConfig.duration || 60;
+    GameState.updateHUD();
+    document.getElementById('roundDisplay').textContent = 'R1';
+    AudioEngine.gameStart();
+    if (navigator.vibrate) navigator.vibrate(200);
+
+    // 初始化遊戲引擎
+    try {
+      gameEngine.init(GameState);
+    } catch (err) {
+      console.error('Game init error:', err);
+      alert('遊戲初始化失敗: ' + err.message);
+      window.location.href = 'map.html';
+      return;
+    }
+
+    // 計時器
+    GameState.timer = setInterval(() => {
+      if (!GameState.running) { endGame(); return; }
+      GameState.timeLeft--;
+      GameState.updateHUD();
+      // 時間警告音效+震動
+      if (GameState.timeLeft === 10) { AudioEngine.playTone(440, 0.2, 'square', 0.15); if (navigator.vibrate) navigator.vibrate([100,50,100]); }
+      else if (GameState.timeLeft <= 5 && GameState.timeLeft > 0) { AudioEngine.playTone(880, 0.1, 'square', 0.2); if (navigator.vibrate) navigator.vibrate(50); }
+      if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); }
+    }, 1000);
+
+    // 遊戲循環
+    (function loop() {
+      if (!GameState.running) return;
+      try {
+        if (gameEngine.update) gameEngine.update();
+        if (gameEngine.render) gameEngine.render();
+      } catch (err) { console.error('Game loop error:', err); }
+      GameState.animFrame = requestAnimationFrame(loop);
+    })();
+  }
+
+  // === 結束遊戲 ===
   function endGame() {
+    if (!GameState.running && GameState.timer) {
+      clearInterval(GameState.timer);
+      GameState.timer = null;
+    }
     GameState.running = false;
     if (GameState.timer) clearInterval(GameState.timer);
     if (GameState.animFrame) cancelAnimationFrame(GameState.animFrame);
-    if (gameEngine && gameEngine.cleanup) gameEngine.cleanup();
+    try { if (gameEngine && gameEngine.cleanup) gameEngine.cleanup(); } catch(e) { console.warn('Cleanup error', e); }
+
     AudioEngine.gameEnd();
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+
     document.getElementById('resultScore').textContent = GameState.score;
-    document.getElementById('resultCombo').textContent = GameState.maxCombo > 0 ? `最高連擊 ${GameState.maxCombo}` : '';
+    document.getElementById('resultCombo').textContent = GameState.maxCombo > 0 ? '🔥 最高連擊 ' + GameState.maxCombo : '';
     document.getElementById('resultBonus').textContent = '排名前5可為團隊加分 +500/+400/+300/+200/+100';
     document.getElementById('gameResult').style.display = 'flex';
   }
+
+  // === 提交分數 ===
   async function submitAndReturn() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '提交中...';
     const session = Auth.getSession();
-    try { await API.post('WRITE', { action:'submitScore', playerId:session.playerId, playerName:session.name, teamId:session.teamId, gameId, score:GameState.score }); } catch {}
+    try {
+      await API.post('WRITE', {
+        action: 'submitScore',
+        playerId: session.playerId,
+        playerName: session.name,
+        teamId: session.teamId,
+        gameId: gameId,
+        score: GameState.score
+      });
+      AudioEngine.uploadSuccess();
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    } catch (err) {
+      console.error('Submit error:', err);
+    }
     window.location.href = 'map.html';
   }
-  function showGameSettings() { document.getElementById('gameSettings').style.display = 'flex'; }
-  function closeGameSettings() { document.getElementById('gameSettings').style.display = 'none'; }
+
+  // === 設定面板 ===
+  function showGameSettings() {
+    if (GameState.running) {
+      // 暫停計時
+      if (GameState.timer) { clearInterval(GameState.timer); GameState.timer = null; }
+    }
+    document.getElementById('gameSettings').style.display = 'flex';
+    AudioEngine.tapButton();
+  }
+  function closeGameSettings() {
+    document.getElementById('gameSettings').style.display = 'none';
+    if (GameState.running && !GameState.timer) {
+      // 恢復計時
+      GameState.timer = setInterval(() => {
+        if (!GameState.running) { endGame(); return; }
+        GameState.timeLeft--;
+        GameState.updateHUD();
+        if (GameState.timeLeft <= 5 && GameState.timeLeft > 0) { AudioEngine.playTone(880, 0.1, 'square', 0.2); }
+        if (GameState.timeLeft <= 0) { GameState.running = false; endGame(); }
+      }, 1000);
+    }
+    AudioEngine.tapButton();
+  }
+
+  // === 鍵盤支援 ===
+  document.addEventListener('keydown', (e) => {
+    const map = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
+    if (map[e.key]) e.preventDefault();
+  });
 </script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<script>
+  // 強制更新 Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+    });
+  }
+</script>
 </body>
 </html>
