@@ -47,7 +47,8 @@
     const sel = document.getElementById('pointsTeam');
     CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.emoji} ${t.name}`; sel.appendChild(o); });
     loadDashboard(); loadPhotos(); renderEmergencyList();
-    setInterval(() => { loadPhotos(); loadDashboard(); }, 4000);
+    var adPI = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.adminDashboard) || { base: 8000, jitter: 2000 };
+    setInterval(() => { loadPhotos(); loadDashboard(); }, adPI.base + Math.random() * adPI.jitter);
   }
   async function loadDashboard() {
     try { const d = await API.get('getDashboard', { action:'getDashboard', password:ADMIN_PWD }, 0);

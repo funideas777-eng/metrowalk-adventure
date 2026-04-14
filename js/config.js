@@ -10,16 +10,58 @@ const CONFIG = {
   EVENT_END_HOUR: 14,
   VENUE: '大江購物中心（桃園市中壢區中園路二段501號）',
 
+  // === 10 GAS 分流節點 ===
+  // 部署方式：複製同一份 GAS 專案 10 次，全部綁同一份 Google Sheets
+  // 每個節點獨立部署為 Web App → 取得不同 URL
+  // READ_NODES: 10 個讀取端點，前端隨機分配 + 故障轉移
+  // WRITE/PHOTO/ADMIN: 各 1 個專用端點（寫入量少，不需分流）
   API_URL: {
-    READ:  'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
+    READ_NODES: [
+      'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',  // Node 1 (主節點)
+      'https://script.google.com/macros/s/NODE_2_DEPLOY_ID/exec',  // Node 2 (待部署)
+      'https://script.google.com/macros/s/NODE_3_DEPLOY_ID/exec',  // Node 3 (待部署)
+      'https://script.google.com/macros/s/NODE_4_DEPLOY_ID/exec',  // Node 4 (待部署)
+      'https://script.google.com/macros/s/NODE_5_DEPLOY_ID/exec',  // Node 5 (待部署)
+      'https://script.google.com/macros/s/NODE_6_DEPLOY_ID/exec',  // Node 6 (待部署)
+      'https://script.google.com/macros/s/NODE_7_DEPLOY_ID/exec',  // Node 7 (待部署)
+      'https://script.google.com/macros/s/NODE_8_DEPLOY_ID/exec',  // Node 8 (待部署)
+      'https://script.google.com/macros/s/NODE_9_DEPLOY_ID/exec',  // Node 9 (待部署)
+      'https://script.google.com/macros/s/NODE_10_DEPLOY_ID/exec'  // Node 10 (待部署)
+    ],
     WRITE: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
     PHOTO: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
-    ADMIN: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec'
+    ADMIN: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
+    // 向下相容：READ 指向主節點（供舊程式碼使用）
+    READ: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec'
+  },
+
+  // === 分流策略設定 ===
+  LOAD_BALANCE: {
+    enabled: true,               // 啟用分流（false 則全走主節點）
+    strategy: 'random-sticky',   // random-sticky: 每個玩家隨機綁定節點，故障時切換
+    healthCheckInterval: 60000,  // 節點健康檢查間隔 60s
+    failoverTimeout: 5000,       // 請求逾時後切換節點 5s
+    maxRetries: 2,               // 最多重試 2 個備用節點
+    activeNodes: 1               // 目前已啟用節點數（部署新節點後更新此數字）
+  },
+
+  // === 600人優化輪詢頻率 ===
+  POLL_INTERVAL: {
+    chat: { base: 15000, jitter: 5000 },        // 聊天 15-20秒（原 3-5秒）
+    broadcast: { base: 20000, jitter: 10000 },   // 廣播 20-30秒（原 5-8秒）
+    scoreboard: { base: 15000, jitter: 5000 },   // 排行榜 15-20秒（原 5-8秒）
+    emergency: { base: 45000, jitter: 15000 },   // 緊急任務 45-60秒（原 30秒）
+    adminDashboard: { base: 8000, jitter: 2000 }, // 管理後台 8-10秒
+    photoStatus: { base: 8000, jitter: 2000 }     // 照片審核 8-10秒
   },
 
   CACHE_TTL: {
-    teams: 60000, scores: 3000, rankings: 3000,
-    broadcasts: 0, config: 300000, chat: 0
+    teams: 120000,      // 隊伍列表 2 分鐘（原 1 分鐘）
+    scores: 15000,      // 分數 15 秒（原 3 秒）
+    rankings: 15000,    // 排行榜 15 秒（原 3 秒）
+    broadcasts: 10000,  // 廣播 10 秒（原 0）
+    config: 300000,     // 系統設定 5 分鐘
+    chat: 5000          // 聊天 5 秒（原 0）
   },
 
   GPS: {

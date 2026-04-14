@@ -5,7 +5,12 @@ const Broadcast = {
     if (saved) { try { const p = JSON.parse(saved); this.messages = p.messages || []; this.lastTimestamp = p.lastTimestamp || null; } catch {} }
     this.startPolling();
   },
-  startPolling() { const poll = () => { if (!document.hidden) this.fetchBroadcasts(); }; poll(); this.pollTimer = setInterval(poll, 5000 + Math.random() * 3000); },
+  startPolling() {
+    var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.broadcast) || { base: 20000, jitter: 10000 };
+    const poll = () => { if (!document.hidden) this.fetchBroadcasts(); };
+    poll();
+    this.pollTimer = setInterval(poll, pi.base + Math.random() * pi.jitter);
+  },
   async fetchBroadcasts() {
     try {
       const data = await API.get('getBroadcasts', { action: 'getBroadcasts', since: this.lastTimestamp || '' }, 0);

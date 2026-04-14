@@ -91,7 +91,7 @@
 
   function showStatusView() { document.getElementById('captureSection').style.display = 'none'; document.getElementById('statusSection').style.display = 'block'; }
   function retakePhoto() { localStorage.removeItem('metrowalk_photo_submission'); photoSubmissionId = null; if (statusPollTimer) clearInterval(statusPollTimer); document.getElementById('captureSection').style.display = 'block'; document.getElementById('statusSection').style.display = 'none'; photoData = null; document.getElementById('photoPreview').innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);"><div style="font-size:64px">📷</div><div style="font-size:14px">尚未拍攝</div></div>'; document.getElementById('uploadBtn').disabled = true; document.getElementById('uploadBtn').textContent = '⬆ 上傳'; document.getElementById('uploadProgress').style.display = 'none'; }
-  function startStatusPolling() { checkStatus(); statusPollTimer = setInterval(checkStatus, 5000); }
+  function startStatusPolling() { var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.photoStatus) || { base: 8000, jitter: 2000 }; checkStatus(); statusPollTimer = setInterval(checkStatus, pi.base + Math.random() * pi.jitter); }
   async function checkStatus() {
     try {
       const d = await API.get('getPhotoStatus', { action:'getPhotoStatus', playerId:session.playerId, gameId:'photo' }, 0);

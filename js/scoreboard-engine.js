@@ -2,12 +2,15 @@ const ScoreboardEngine = {
   pollTimer: null, currentTab: 'team', currentGame: 'pacman', rankings: [], maxPoints: 0,
 
   init() { this.startPolling(); this.fetchTeamRankings(); },
-  startPolling() { this.pollTimer = setInterval(() => { if (!document.hidden) { if (this.currentTab === 'team') this.fetchTeamRankings(); else this.fetchGameScores(this.currentGame); } }, 5000 + Math.random() * 3000); },
+  startPolling() {
+    var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.scoreboard) || { base: 15000, jitter: 5000 };
+    this.pollTimer = setInterval(() => { if (!document.hidden) { if (this.currentTab === 'team') this.fetchTeamRankings(); else this.fetchGameScores(this.currentGame); } }, pi.base + Math.random() * pi.jitter);
+  },
   stopPolling() { if (this.pollTimer) clearInterval(this.pollTimer); },
 
   async fetchTeamRankings() {
     try {
-      const data = await API.get('getTeamRankings', { action: 'getTeamRankings' }, 3000);
+      const data = await API.get('getTeamRankings', { action: 'getTeamRankings' }, CONFIG.CACHE_TTL.rankings || 15000);
       if (data && data.rankings) { this.rankings = data.rankings; this.maxPoints = Math.max(...data.rankings.map(r => r.totalPoints), 1); this.renderTeamRankings(data.rankings); }
     } catch {}
   },
@@ -26,7 +29,7 @@ const ScoreboardEngine = {
 
   async fetchGameScores(gameId) {
     try {
-      const data = await API.get('getGameScores', { action: 'getGameScores', gameId, limit: 30 }, 3000);
+      const data = await API.get('getGameScores', { action: 'getGameScores', gameId, limit: 30 }, CONFIG.CACHE_TTL.rankings || 15000);
       if (data && data.scores) this.renderGameScores(data.scores, gameId);
     } catch {}
   },

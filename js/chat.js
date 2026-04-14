@@ -2,7 +2,12 @@ const Chat = {
   channel: 'team', messages: { team: [], world: [] }, lastTimestamp: { team: null, world: null },
   pollTimer: null, isOpen: false, danmakuQueue: [], danmakuActive: false,
   init() { this.startPolling(); },
-  startPolling() { const poll = () => { if (!document.hidden) { this.fetchMessages('team'); this.fetchMessages('world'); } }; poll(); this.pollTimer = setInterval(poll, 3000 + Math.random() * 2000); },
+  startPolling() {
+    var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.chat) || { base: 15000, jitter: 5000 };
+    const poll = () => { if (!document.hidden) { this.fetchMessages('team'); this.fetchMessages('world'); } };
+    poll();
+    this.pollTimer = setInterval(poll, pi.base + Math.random() * pi.jitter);
+  },
   async fetchMessages(channel) {
     const session = Auth.getSession(); if (!session) return;
     try {

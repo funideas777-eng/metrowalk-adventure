@@ -243,7 +243,8 @@
     }).catch(function() {});
   }
   loadEmergencyTasks();
-  setInterval(loadEmergencyTasks, 30000);
+  var emergPI = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.emergency) || { base: 45000, jitter: 15000 };
+  setInterval(loadEmergencyTasks, emergPI.base + Math.random() * emergPI.jitter);
 
   function switchTab(tab) {
     if (tab === 'rank') { window.location.href = 'scoreboard.html'; return; }
