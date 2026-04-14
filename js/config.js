@@ -17,16 +17,16 @@ const CONFIG = {
   // WRITE/PHOTO/ADMIN: 各 1 個專用端點（寫入量少，不需分流）
   API_URL: {
     READ_NODES: [
-      'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',  // Node 1 (主節點)
-      'https://script.google.com/macros/s/NODE_2_DEPLOY_ID/exec',  // Node 2 (待部署)
-      'https://script.google.com/macros/s/NODE_3_DEPLOY_ID/exec',  // Node 3 (待部署)
-      'https://script.google.com/macros/s/NODE_4_DEPLOY_ID/exec',  // Node 4 (待部署)
-      'https://script.google.com/macros/s/NODE_5_DEPLOY_ID/exec',  // Node 5 (待部署)
-      'https://script.google.com/macros/s/NODE_6_DEPLOY_ID/exec',  // Node 6 (待部署)
-      'https://script.google.com/macros/s/NODE_7_DEPLOY_ID/exec',  // Node 7 (待部署)
-      'https://script.google.com/macros/s/NODE_8_DEPLOY_ID/exec',  // Node 8 (待部署)
-      'https://script.google.com/macros/s/NODE_9_DEPLOY_ID/exec',  // Node 9 (待部署)
-      'https://script.google.com/macros/s/NODE_10_DEPLOY_ID/exec'  // Node 10 (待部署)
+      'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',  // Node 1
+      'https://script.google.com/macros/s/AKfycbxRFVUMNUvaayFZw1qfU8ETG15fWWUaDYN1DpLifZ0rDW0wExz5c470GE3jF9wng7l3Zw/exec',   // Node 2
+      'https://script.google.com/macros/s/AKfycbz9YYNDWxb0RZ64tqO1nhHU4ZOkXPCAWmZwk3-w2RqaUY9y1lyzLU4kAEWugevBJkrj/exec',     // Node 3
+      'https://script.google.com/macros/s/AKfycbxJeNiz63hLpE5PkMKjqLV0Wr3CWekq-U6iJ6ylXiTawOv9scABcRvF8_C5aPOwr43stw/exec',   // Node 4
+      'https://script.google.com/macros/s/AKfycbz3sOlA5aep0Sk1_KCFynNGdgmtfwaULU6dUakuN-iXiH7zJLg3B0OwDabQPW2TZhVY/exec',     // Node 5
+      'https://script.google.com/macros/s/AKfycbxDp-eys7phj3_LXibeoxDlAfUqLKSaiYYZSvWzA9nOcDdyJV9wwxJI82gJBSKDLYWQ/exec',      // Node 6
+      'https://script.google.com/macros/s/AKfycbxNgta4tKPZnPYX0Mo3_27-_0R0U3gP7I2bt5aHu0UMoFbi82Wl7pQoO_GNHDzmJ1XT8Q/exec',   // Node 7
+      'https://script.google.com/macros/s/AKfycbz8tTxS-1nWhrMqNiyLSHgbNOLpCHOxcUqeNOO_fk90pZ4zQJRf0ZSePo5lwGVXBcWX/exec',      // Node 8
+      'https://script.google.com/macros/s/AKfycbzej0dxqT_bh8GFCoCHfdjAV9M--Woq_bi_zAGgEgKyOnPrBg2m2GXK6Mgj3yFBKleOUQ/exec',   // Node 9
+      'https://script.google.com/macros/s/AKfycbw9OSvv43DJ30xsLyFnm2G7rI0ol0IMpgLHrESpZZcLSyxKV53W00cjNCilzfq234aZ/exec'        // Node 10
     ],
     WRITE: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
     PHOTO: 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec',
@@ -42,7 +42,7 @@ const CONFIG = {
     healthCheckInterval: 60000,  // 節點健康檢查間隔 60s
     failoverTimeout: 5000,       // 請求逾時後切換節點 5s
     maxRetries: 2,               // 最多重試 2 個備用節點
-    activeNodes: 1               // 目前已啟用節點數（部署新節點後更新此數字）
+    activeNodes: 10              // 10 個節點全部啟用
   },
 
   // === 600人優化輪詢頻率 ===
