@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#1a1a2e">
   <link rel="manifest" href="manifest.json">
   <title>遊戲 - 大江購物冒險</title>
-  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/common.css?v=4">
   <style>
     body { background:#1a1a2e; }
     .game-page { min-height:100vh; min-height:100dvh; position:relative; overflow:hidden; }
@@ -42,6 +42,20 @@
     .btn-submit:active { transform:scale(0.95); }
     .btn-submit.submitting { background:#ff9800!important; }
     .btn-submit.submitted { background:#4CAF50!important; }
+    /* Frank message system */
+    .frank-section { margin-top:16px; width:100%; max-width:340px; animation:fadeIn 0.5s ease 0.3s both; }
+    .frank-card { background:rgba(255,255,255,0.06); border:1px solid rgba(0,188,212,0.2); border-radius:16px; padding:16px; backdrop-filter:blur(8px); }
+    .frank-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .frank-avatar { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#00BCD4,#0097A7); display:flex; align-items:center; justify-content:center; font-size:28px; box-shadow:0 0 16px rgba(0,188,212,0.4); flex-shrink:0; position:relative; }
+    .frank-avatar::after { content:''; position:absolute; inset:-3px; border-radius:50%; border:2px solid rgba(0,188,212,0.3); animation:pulse 2s ease-in-out infinite; }
+    .frank-name { font-size:14px; font-weight:800; color:var(--secondary); }
+    .frank-role { font-size:11px; color:rgba(255,255,255,0.4); }
+    .frank-msg { font-size:14px; color:rgba(255,255,255,0.85); line-height:1.6; margin-bottom:12px; }
+    .frank-responses { display:flex; flex-direction:column; gap:8px; }
+    .frank-resp-btn { padding:10px 14px; border-radius:12px; border:1.5px solid rgba(0,188,212,0.25); background:rgba(0,188,212,0.06); color:var(--text); font-size:13px; font-weight:600; cursor:pointer; text-align:left; transition:all 0.2s; }
+    .frank-resp-btn:active { background:rgba(0,188,212,0.2); transform:scale(0.97); }
+    .frank-resp-btn.selected { border-color:var(--secondary); background:rgba(0,188,212,0.15); }
+    .frank-reply { margin-top:10px; padding:10px 14px; background:rgba(0,188,212,0.08); border-radius:12px; font-size:13px; color:var(--secondary); animation:fadeIn 0.3s ease; display:none; }
     /* D-Pad */
     .dpad-container { display:none; position:fixed; bottom:0; left:0; right:0; height:150px; z-index:10; padding-bottom:env(safe-area-inset-bottom,0); background:linear-gradient(transparent,rgba(0,0,0,0.6)); }
     .dpad-container.active { display:flex; align-items:center; justify-content:center; }
@@ -118,6 +132,18 @@
       <div class="trophy-row"><span class="trophy-icon">🥉</span><span class="trophy-text">第3名</span><span class="trophy-pts">團隊 +300</span></div>
       <div class="trophy-row"><span class="trophy-icon">🏅</span><span class="trophy-text">第4名</span><span class="trophy-pts">團隊 +200</span></div>
       <div class="trophy-row"><span class="trophy-icon">🏅</span><span class="trophy-text">第5名</span><span class="trophy-pts">團隊 +100</span></div>
+    </div>
+    <!-- Frank Message -->
+    <div class="frank-section" id="frankSection" style="display:none;">
+      <div class="frank-card">
+        <div class="frank-header">
+          <div class="frank-avatar">🧔‍♂️</div>
+          <div><div class="frank-name">Frank 法蘭克</div><div class="frank-role">TSMC BSID 主管</div></div>
+        </div>
+        <div class="frank-msg" id="frankMsg"></div>
+        <div class="frank-responses" id="frankResponses"></div>
+        <div class="frank-reply" id="frankReply"></div>
+      </div>
     </div>
     <button class="btn btn-primary btn-lg btn-submit" id="btnSubmit" style="margin-top:20px;" onclick="submitAndReturn()">📤 提交分數</button>
     <button class="btn btn-outline" style="margin-top:10px;color:white;border-color:rgba(255,255,255,0.3);" onclick="window.location.href='map.html'">↩ 返回地圖</button>
@@ -390,6 +416,53 @@
     }
   }
 
+  // === Frank Messages ===
+  var FRANK_SUCCESS = [
+    { msg: '太強了！果然是我帶出來的精英，這實力根本可以出道了 💪', responses: ['老闆，你教得好！🫡', '我也嚇到自己了 😎', '這只是基本操作啦～'] },
+    { msg: '看到這分數我都想幫你加薪了…可惜我也只是打工的 😂', responses: ['那先加雞腿吧！🍗', '精神上的加薪我收到了 💰', '老闆你最帥了！✨'] },
+    { msg: '你剛剛的表現堪稱教科書等級，讓我回味一下…🤩', responses: ['要不要我再表演一次？😏', '截圖存起來當傳家寶！📸', '低調低調，怕同事嫉妒 🤫'] },
+    { msg: '這波操作太絲滑了！公司年會表演就靠你了 🎤', responses: ['我的才藝就是贏比賽 🏆', '年會我可以打十個！💪', '先讓我喘口氣好嗎 😮‍💨'] },
+    { msg: 'BSID 有你真好！你就是團隊的 MVP 🌟', responses: ['是 BSID 讓我發光的！🌟', 'MVP 是每一位隊友！🤝', '等等，MVP 有獎金嗎？💸'] }
+  ];
+  var FRANK_FAIL = [
+    { msg: '沒事沒事，愛迪生失敗了一千次才發明燈泡，你才第一次而已！💡', responses: ['我是在累積經驗值！📈', '愛迪生沒有手機遊戲 😤', '下次一定！拳頭硬了 👊'] },
+    { msg: '你知道嗎？失敗是成功的老母親。去吧，讓老母親驕傲！🫶', responses: ['我這就去認親！😂', '老母親等我凱旋歸來！🏃', '這比喻太有畫面了 😆'] },
+    { msg: '別灰心！我當年第一次報告也被打槍，現在不也活得好好的嗎 😌', responses: ['老闆你的故事好勵志 🥹', '所以重點是活著就好？😂', '我馬上重新挑戰！🔥'] },
+    { msg: '這次只是熱身！等你全力以赴的時候，分數肯定爆表 🚀', responses: ['對！我還沒認真呢 😤', '熱身結束，開始發力！💪', '老闆你真會安慰人 🥺'] },
+    { msg: '失敗不可怕，可怕的是不敢再試一次。BSID 的勇者不怕跌倒！⚔️', responses: ['我是 BSID 最勇的勇者！⚔️', '跌倒了就再爬起來！🧗', '老闆這台詞好帥 🤩'] }
+  ];
+  var FRANK_REPLIES = [
+    '哈哈哈！你的反應也太可愛了吧，繼續加油！🔥',
+    '就是這個態度！BSID 精神就是永不放棄 💪',
+    '笑死我了 😂 好啦好啦，趕快去下一關吧！',
+    '收到！我會在終點等你們凱旋歸來的 🏁',
+    '哈哈 你真的很有趣耶！快去拿更多分吧 🎯'
+  ];
+
+  function showFrankMessage(passed) {
+    var pool = passed ? FRANK_SUCCESS : FRANK_FAIL;
+    var frank = pool[Math.floor(Math.random() * pool.length)];
+    document.getElementById('frankMsg').textContent = frank.msg;
+    var respEl = document.getElementById('frankResponses');
+    respEl.innerHTML = '';
+    frank.responses.forEach(function(r, i) {
+      var btn = document.createElement('button');
+      btn.className = 'frank-resp-btn';
+      btn.textContent = r;
+      btn.onclick = function() {
+        respEl.querySelectorAll('.frank-resp-btn').forEach(function(b) { b.classList.remove('selected'); b.style.pointerEvents = 'none'; });
+        btn.classList.add('selected');
+        var reply = FRANK_REPLIES[Math.floor(Math.random() * FRANK_REPLIES.length)];
+        var replyEl = document.getElementById('frankReply');
+        replyEl.textContent = '💬 Frank：' + reply;
+        replyEl.style.display = 'block';
+        if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
+      };
+      respEl.appendChild(btn);
+    });
+    document.getElementById('frankSection').style.display = 'block';
+  }
+
   // === End Game ===
   var _gameEnded = false;
   function endGame() {
@@ -429,6 +502,7 @@
       submitBtn.style.display = 'none';
     }
 
+    showFrankMessage(passed);
     document.getElementById('gameResult').style.display = 'flex';
   }
 

@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#E91E63">
   <title>管理後台 - 大江購物冒險</title>
-  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/common.css?v=4">
   <style>
-    .admin-login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:linear-gradient(135deg,#2d3436,#636e72); }
-    .admin-card { width:100%; max-width:400px; background:white; border-radius:20px; padding:32px 24px; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+    .admin-login { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:#0a0a1a; }
+    .admin-card { width:100%; max-width:400px; background:rgba(15,15,35,0.9); border:1px solid rgba(0,188,212,0.2); border-radius:20px; padding:32px 24px; box-shadow:0 10px 40px rgba(0,0,0,0.5); backdrop-filter:blur(20px); }
+    .admin-card h2 { color:var(--text); }
     .admin-card h2 { text-align:center; margin-bottom:24px; }
     .admin-panel { display:none; } .admin-panel.show { display:block; }
-    .admin-section { background:white; border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:var(--shadow); }
-    .admin-section h3 { font-size:16px; margin-bottom:12px; }
+    .admin-section { background:var(--bg-card); border:1px solid rgba(0,188,212,0.12); border-radius:16px; padding:20px; margin-bottom:16px; box-shadow:var(--shadow); backdrop-filter:blur(8px); }
+    .admin-section h3 { font-size:16px; margin-bottom:12px; color:var(--text); }
     .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:16px; }
-    .stat-card { background:#f8f9fa; border-radius:12px; padding:12px; text-align:center; }
+    .stat-card { background:rgba(255,255,255,0.04); border:1px solid rgba(0,188,212,0.1); border-radius:12px; padding:12px; text-align:center; }
     .stat-card .num { font-size:24px; font-weight:900; color:var(--primary); }
     .stat-card .label { font-size:11px; color:var(--text-light); margin-top:4px; }
-    .photo-review-card { background:#f8f9fa; border-radius:12px; padding:14px; margin-bottom:12px; }
+    .photo-review-card { background:rgba(255,255,255,0.04); border:1px solid rgba(0,188,212,0.1); border-radius:12px; padding:14px; margin-bottom:12px; }
     .photo-review-card img { width:100%; border-radius:8px; margin-bottom:10px; max-height:240px; object-fit:cover; }
     .photo-review-actions { display:flex; gap:8px; }
     .badge-pending { display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; background:#fff3e0; color:#e65100; }
@@ -33,7 +34,9 @@
     <div class="admin-section"><h3>📊 即時數據</h3><div class="stat-grid"><div class="stat-card"><div class="num" id="statPlayers">-</div><div class="label">已登入</div></div><div class="stat-card"><div class="num" id="statPlays">-</div><div class="label">遊戲次數</div></div><div class="stat-card"><div class="num" id="statPending">-</div><div class="label">待審照片</div></div><div class="stat-card"><div class="num" id="statTime">-</div><div class="label">目前時間</div></div></div><button class="btn btn-outline btn-sm" onclick="loadDashboard()">🔄 刷新</button></div>
     <div class="admin-section"><h3>📢 發送廣播</h3><textarea class="input" id="broadcastContent" rows="3" placeholder="輸入廣播訊息..." style="resize:none;"></textarea><div style="margin-top:12px;"><button class="btn btn-primary" onclick="sendBroadcast()">📢 發送</button></div></div>
     <div class="admin-section"><h3>📸 照片審核</h3><button class="btn btn-outline btn-sm" onclick="loadPhotos()">🔄 刷新照片</button><div id="photoList" style="margin-top:12px;"></div></div>
+    <div class="admin-section"><h3>🚨 緊急任務管理</h3><div id="emergencyList"></div><button class="btn btn-primary btn-sm" onclick="triggerEmergency()" style="margin-top:12px;">🚀 手動觸發下一組</button></div>
     <div class="admin-section"><h3>➕ 手動加分</h3><div class="form-group"><select class="select" id="pointsTeam"><option value="">選擇隊伍</option></select></div><div class="form-group"><input type="number" class="input" id="pointsAmount" placeholder="分數"></div><div class="form-group"><input type="text" class="input" id="pointsReason" placeholder="原因"></div><button class="btn btn-accent" id="addPointsBtn" onclick="addPoints()">確認加分</button></div>
+    <div class="admin-section"><h3>🔄 一鍵重置</h3><p style="font-size:13px;color:var(--text-light);margin-bottom:12px;">清除所有遊戲紀錄、聊天記錄、玩家資料，讓遊戲重新開始。此操作無法復原！</p><button class="btn" style="background:#f44336;color:white;" onclick="resetAll()">⚠️ 重置所有資料</button></div>
   </div>
 </div>
 <script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script>
@@ -43,7 +46,7 @@
   function initAdmin() {
     const sel = document.getElementById('pointsTeam');
     CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.emoji} ${t.name}`; sel.appendChild(o); });
-    loadDashboard(); loadPhotos();
+    loadDashboard(); loadPhotos(); renderEmergencyList();
     setInterval(() => { loadPhotos(); loadDashboard(); }, 4000);
   }
   async function loadDashboard() {
@@ -72,6 +75,60 @@
     if (!t||!p) return alert('請填寫完整');
     const btn = document.getElementById('addPointsBtn'); btn.disabled=true; btn.textContent='提交中...';
     try { await API.post('ADMIN', { action:'addManualPoints', password:ADMIN_PWD, teamId:parseInt(t), points:p, detail:r }); alert(`已加 ${p} 分！`); document.getElementById('pointsAmount').value=''; document.getElementById('pointsReason').value=''; btn.textContent='✅ 已送出'; setTimeout(()=>{ btn.disabled=false; btn.textContent='確認加分'; },3000); } catch { alert('失敗'); btn.disabled=false; btn.textContent='確認加分'; }
+  }
+
+  // === Emergency Task Management ===
+  function renderEmergencyList() {
+    const list = document.getElementById('emergencyList');
+    if (!list) return;
+    const tasks = CONFIG.EMERGENCY_TASKS || [];
+    list.innerHTML = tasks.map((t, i) => {
+      const statusColor = t.active ? '#4caf50' : '#999';
+      const statusText = t.active ? '✅ 已觸發' : '⏳ 待觸發';
+      return `<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(0,188,212,0.1);border-radius:12px;padding:14px;margin-bottom:10px;border-left:4px solid ${statusColor};">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><strong>${t.icon} ${t.name}</strong> <span style="font-size:11px;color:${statusColor};font-weight:700;">${statusText}</span></div>
+          <div style="font-size:12px;color:#999;">⏰ ${t.triggerTime}</div>
+        </div>
+        <div style="font-size:13px;color:#666;margin-top:6px;">${t.description}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:12px;color:#FF6F00;font-weight:700;">🏅 +${t.points} 分</span>
+          ${!t.active ? `<button class="btn btn-primary btn-sm" onclick="activateEmergency(${i})">🚀 立即觸發</button>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function activateEmergency(idx) {
+    if (!confirm('確定觸發此緊急任務？將廣播通知所有玩家！')) return;
+    const task = CONFIG.EMERGENCY_TASKS[idx];
+    task.active = true;
+    task._triggered = true;
+    // Send broadcast notification to all players
+    API.post('ADMIN', { action:'broadcast', password:ADMIN_PWD, type:'emergency', content:`🚨 緊急任務【${task.name}】已開啟！${task.description}（完成可得 ${task.points} 分）`, title:task.name, id:task.id, points:task.points }).then(() => {
+      alert('已觸發並廣播：' + task.name);
+      renderEmergencyList();
+    }).catch(() => alert('廣播失敗'));
+  }
+
+  function triggerEmergency() {
+    const next = CONFIG.EMERGENCY_TASKS.find(t => !t.active);
+    if (!next) { alert('所有緊急任務已觸發完畢！'); return; }
+    const idx = CONFIG.EMERGENCY_TASKS.indexOf(next);
+    activateEmergency(idx);
+  }
+
+  // === Reset All ===
+  async function resetAll() {
+    if (!confirm('⚠️ 確定要重置所有資料嗎？\n\n將清除：\n• 所有遊戲分數紀錄\n• 所有聊天訊息\n• 所有玩家登入資料\n• 所有照片審核紀錄\n\n此操作無法復原！')) return;
+    if (!confirm('再次確認：真的要清除所有資料嗎？')) return;
+    try {
+      await API.post('ADMIN', { action:'resetAll', password:ADMIN_PWD });
+      alert('✅ 所有資料已重置！遊戲可以重新開始。');
+      loadDashboard(); loadPhotos();
+    } catch(e) {
+      alert('重置失敗：' + (e.message || '未知錯誤'));
+    }
   }
 </script>
 </body>

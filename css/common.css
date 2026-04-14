@@ -1,29 +1,29 @@
-:root { --primary:#E91E63; --secondary:#00BCD4; --accent:#FFD740; --bg:#f8f9fa; --text:#2d3436; --text-light:#636e72; --shadow:0 2px 12px rgba(0,0,0,0.08); --radius:14px; }
+:root { --primary:#E91E63; --secondary:#00BCD4; --accent:#FFD740; --bg:#0a0a1a; --bg-card:rgba(255,255,255,0.06); --text:#e0e0e0; --text-light:#8899aa; --shadow:0 2px 16px rgba(0,200,255,0.06); --radius:14px; --glow-cyan:rgba(0,188,212,0.3); --glow-pink:rgba(233,30,99,0.3); }
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); -webkit-tap-highlight-color:transparent; overflow-x:hidden; }
 .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:12px 24px; border-radius:var(--radius); font-size:15px; font-weight:700; border:none; cursor:pointer; transition:all 0.2s; }
-.btn-primary { background:var(--primary); color:white; }
-.btn-primary:active { background:#C2185B; }
-.btn-secondary { background:var(--secondary); color:white; }
-.btn-accent { background:var(--accent); color:#333; }
-.btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); }
+.btn-primary { background:linear-gradient(135deg,#E91E63,#FF5252); color:white; box-shadow:0 4px 15px rgba(233,30,99,0.3); }
+.btn-primary:active { background:#C2185B; transform:scale(0.97); }
+.btn-secondary { background:linear-gradient(135deg,#00BCD4,#0097A7); color:white; box-shadow:0 4px 15px rgba(0,188,212,0.3); }
+.btn-accent { background:linear-gradient(135deg,#FFD740,#FFC107); color:#1a1a2e; }
+.btn-outline { background:transparent; border:2px solid var(--secondary); color:var(--secondary); }
 .btn-block { width:100%; }
 .btn-lg { padding:16px 28px; font-size:17px; border-radius:16px; }
 .btn-sm { padding:8px 16px; font-size:13px; }
-.input,.select { width:100%; padding:14px 16px; border:2px solid #e0e0e0; border-radius:var(--radius); font-size:15px; background:white; outline:none; transition:border-color 0.2s; }
-.input:focus,.select:focus { border-color:var(--primary); }
+.input,.select { width:100%; padding:14px 16px; border:2px solid rgba(0,188,212,0.2); border-radius:var(--radius); font-size:15px; background:rgba(255,255,255,0.05); color:var(--text); outline:none; transition:border-color 0.2s; }
+.input:focus,.select:focus { border-color:var(--secondary); box-shadow:0 0 12px var(--glow-cyan); }
 .form-group { margin-bottom:16px; }
-.form-label { display:block; font-size:13px; font-weight:600; color:var(--text-light); margin-bottom:6px; }
-.card { background:white; border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
-.notification-bar { position:fixed; top:-60px; left:16px; right:16px; background:white; padding:12px 16px; border-radius:14px; box-shadow:0 4px 20px rgba(0,0,0,0.15); z-index:200; transition:top 0.4s ease; font-size:14px; }
+.form-label { display:block; font-size:13px; font-weight:600; color:var(--secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; }
+.card { background:var(--bg-card); border:1px solid rgba(0,188,212,0.15); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); backdrop-filter:blur(10px); }
+.notification-bar { position:fixed; top:-60px; left:16px; right:16px; background:rgba(10,10,26,0.95); border:1px solid rgba(0,188,212,0.3); padding:12px 16px; border-radius:14px; box-shadow:0 4px 20px rgba(0,188,212,0.15); z-index:200; transition:top 0.4s ease; font-size:14px; color:var(--text); }
 .notification-bar.show { top:60px; }
 .message-panel { position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:150; transform:translateX(100%); transition:transform 0.3s ease; overflow-y:auto; padding:0; }
 .message-panel.show { transform:translateX(0); }
-.top-bar { position:sticky; top:0; display:flex; align-items:center; padding:12px 16px; background:white; z-index:50; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
-.top-bar-back { background:none; border:none; font-size:20px; cursor:pointer; width:40px; }
-.top-bar-title { flex:1; text-align:center; font-size:16px; font-weight:700; }
+.top-bar { position:sticky; top:0; display:flex; align-items:center; padding:12px 16px; background:rgba(10,10,26,0.95); border-bottom:1px solid rgba(0,188,212,0.15); z-index:50; backdrop-filter:blur(10px); }
+.top-bar-back { background:none; border:none; font-size:20px; cursor:pointer; width:40px; color:var(--text); }
+.top-bar-title { flex:1; text-align:center; font-size:16px; font-weight:700; color:var(--text); }
 .page-container { padding:16px; max-width:480px; margin:0 auto; }
-.rank-item { display:flex; align-items:center; gap:10px; padding:12px 14px; background:white; border-radius:12px; margin-bottom:8px; box-shadow:var(--shadow); animation:fadeIn 0.3s ease both; }
+.rank-item { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--bg-card); border:1px solid rgba(0,188,212,0.1); border-radius:12px; margin-bottom:8px; box-shadow:var(--shadow); animation:fadeIn 0.3s ease both; }
 .rank-number { width:28px; height:28px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; }
 .rank-number.top1 { background:linear-gradient(135deg,#FFD700,#FFA000); color:white; }
 .rank-number.top2 { background:linear-gradient(135deg,#C0C0C0,#9E9E9E); color:white; }
@@ -31,8 +31,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif
 .rank-emoji { font-size:20px; }
 .rank-name { font-size:14px; font-weight:600; }
 .rank-bar { height:4px; background:linear-gradient(to right,var(--primary),var(--secondary)); border-radius:2px; margin-top:4px; transition:width 0.5s; }
-.rank-score { font-size:18px; font-weight:900; color:var(--primary); }
-.my-team { background:rgba(233,30,99,0.08); border-left:3px solid var(--primary); }
+.rank-score { font-size:18px; font-weight:900; color:var(--accent); }
+.my-team { background:rgba(0,188,212,0.08); border-left:3px solid var(--secondary); }
 .game-hud { display:flex; justify-content:space-around; padding:8px 16px; background:rgba(0,0,0,0.3); }
 .hud-item { text-align:center; }
 .hud-label { font-size:10px; color:rgba(255,255,255,0.5); }

@@ -5,7 +5,9 @@
 const CONFIG = {
   EVENT_NAME: '大江購物冒險',
   EVENT_DATE: '2026-05-01',
-  EVENT_TIME: '10:00-17:00',
+  EVENT_TIME: '10:00-14:00',
+  EVENT_START_HOUR: 10,
+  EVENT_END_HOUR: 14,
   VENUE: '大江購物中心（桃園市中壢區中園路二段501號）',
 
   API_URL: {
@@ -182,6 +184,13 @@ const CONFIG = {
 
   // 團隊加分規則（前5名）
   TEAM_BONUS: [500, 400, 300, 200, 100],
+
+  // ========== 緊急任務（後台預設3組） ==========
+  EMERGENCY_TASKS: [
+    { id: 'emergency-1', name: '閃電集合令', icon: '⚡', description: '全隊到 1F 大廳集合，拍一張全員合照上傳！', points: 500, triggerTime: '11:00', active: false },
+    { id: 'emergency-2', name: '限時搶答', icon: '🧠', description: '前往 3F 服務台，回答工作人員的問題即可過關！', points: 300, triggerTime: '12:00', active: false },
+    { id: 'emergency-3', name: '神秘寶箱', icon: '🎁', description: '在 GBF 美食街找到隱藏的寶箱貼紙，拍照上傳即可獲得獎勵！', points: 400, triggerTime: '13:00', active: false }
+  ],
 
   // ========== 問答題庫 ==========
   QUIZ_QUESTIONS: [

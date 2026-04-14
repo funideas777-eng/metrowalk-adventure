@@ -197,6 +197,7 @@ window.CookDumplingGame = {
     var self = this;
     var bonus = 50;
     self.score += bonus; self.game.score = self.score; self.game.addScore(bonus);
+    self.game.running = false;
     if (typeof AudioEngine !== 'undefined') AudioEngine.roundClear();
     self.container.innerHTML = '<div style="text-align:center;color:white;padding:40px 16px;">' +
       '<div style="font-size:80px;margin-bottom:16px;">🥟</div>' +

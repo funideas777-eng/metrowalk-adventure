@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metrowalk-v3';
+const CACHE_NAME = 'metrowalk-v5';
 const STATIC_ASSETS = [
   '/metrowalk-adventure/index.html',
   '/metrowalk-adventure/map.html',
@@ -15,7 +15,9 @@ const STATIC_ASSETS = [
   '/metrowalk-adventure/js/gps.js',
   '/metrowalk-adventure/js/broadcast.js',
   '/metrowalk-adventure/js/chat.js',
-  '/metrowalk-adventure/js/scoreboard-engine.js'
+  '/metrowalk-adventure/js/scoreboard-engine.js',
+  '/metrowalk-adventure/js/dialogue.js',
+  '/metrowalk-adventure/js/dialogue-scripts.js'
 ];
 
 self.addEventListener('install', e => {
@@ -51,7 +53,21 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 其他資源：快取優先，失敗則走網路
+  // HTML 和 CSS：網路優先，失敗才用快取
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.css') || url.pathname.endsWith('.js')) {
+    e.respondWith(
+      fetch(e.request).then(response => {
+        if (response.ok && e.request.method === 'GET') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // 其他資源（圖片等）：快取優先，失敗則走網路
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;

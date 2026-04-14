@@ -9,28 +9,49 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
   <title>大江購物冒險</title>
-  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/common.css?v=4">
   <style>
-    .login-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; background:linear-gradient(135deg,#E91E63 0%,#FF5252 50%,#FFD740 100%); position:relative; overflow:hidden; }
-    .login-bg { position:absolute; top:0;left:0;right:0;bottom:0; font-size:40px; opacity:0.12; pointer-events:none; display:flex; flex-wrap:wrap; align-content:flex-start; gap:20px; padding:20px; overflow:hidden; }
-    .login-card { width:100%; max-width:380px; background:rgba(255,255,255,0.95); border-radius:24px; padding:36px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.2); position:relative; z-index:1; animation:fadeIn 0.6s ease; }
+    .login-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; background:#0a0a1a; position:relative; overflow:hidden; }
+    /* Animated grid background */
+    .login-grid { position:absolute; top:0;left:0;right:0;bottom:0; background-image:
+      linear-gradient(rgba(0,188,212,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,188,212,0.06) 1px, transparent 1px);
+      background-size:40px 40px; pointer-events:none; animation:gridScroll 20s linear infinite; }
+    @keyframes gridScroll { from{transform:translate(0,0)} to{transform:translate(40px,40px)} }
+    .login-particles { position:absolute; top:0;left:0;right:0;bottom:0; pointer-events:none; overflow:hidden; }
+    .login-particle { position:absolute; width:3px; height:3px; background:var(--secondary); border-radius:50%; opacity:0; animation:particleFloat 6s ease-in-out infinite; box-shadow:0 0 8px var(--secondary); }
+    @keyframes particleFloat { 0%{opacity:0;transform:translateY(100vh)} 20%{opacity:0.8} 80%{opacity:0.8} 100%{opacity:0;transform:translateY(-20px)} }
+    .login-glow-top { position:absolute; top:-100px; left:50%; transform:translateX(-50%); width:400px; height:300px; background:radial-gradient(ellipse, rgba(0,188,212,0.15), transparent 70%); pointer-events:none; }
+    .login-glow-bot { position:absolute; bottom:-80px; left:50%; transform:translateX(-50%); width:400px; height:250px; background:radial-gradient(ellipse, rgba(233,30,99,0.12), transparent 70%); pointer-events:none; }
+    .login-card { width:100%; max-width:380px; background:rgba(15,15,35,0.85); border:1px solid rgba(0,188,212,0.2); border-radius:24px; padding:36px 28px; box-shadow:0 0 40px rgba(0,188,212,0.08), 0 20px 60px rgba(0,0,0,0.4); position:relative; z-index:1; animation:fadeIn 0.6s ease; backdrop-filter:blur(20px); }
+    .login-badge { text-align:center; margin-bottom:12px; }
+    .login-badge-text { display:inline-block; font-size:11px; font-weight:700; color:var(--secondary); letter-spacing:3px; text-transform:uppercase; padding:6px 16px; border:1px solid rgba(0,188,212,0.3); border-radius:20px; background:rgba(0,188,212,0.08); }
     .login-logo { text-align:center; margin-bottom:8px; }
-    .login-logo-icon { font-size:64px; display:block; margin-bottom:8px; }
-    .login-title { text-align:center; font-size:22px; font-weight:900; color:var(--text); margin-bottom:4px; }
-    .login-subtitle { text-align:center; font-size:13px; color:var(--text-light); margin-bottom:28px; }
-    .team-preview { margin-top:12px; padding:16px; background:linear-gradient(135deg,var(--primary),#FF5252); border-radius:var(--radius); color:white; text-align:center; display:none; }
+    .login-logo-icon { font-size:64px; display:block; margin-bottom:8px; filter:drop-shadow(0 0 20px rgba(0,188,212,0.4)); }
+    .login-title { text-align:center; font-size:24px; font-weight:900; color:#fff; margin-bottom:4px; letter-spacing:2px; text-shadow:0 0 20px rgba(0,188,212,0.3); }
+    .login-subtitle { text-align:center; font-size:13px; color:var(--secondary); margin-bottom:6px; letter-spacing:1px; }
+    .login-welcome { text-align:center; font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:24px; line-height:1.6; }
+    .login-welcome strong { color:var(--accent); font-weight:700; }
+    .team-preview { margin-top:12px; padding:16px; background:linear-gradient(135deg,rgba(0,188,212,0.15),rgba(233,30,99,0.1)); border:1px solid rgba(0,188,212,0.2); border-radius:var(--radius); color:white; text-align:center; display:none; }
     .team-preview.show { display:block; animation:fadeIn 0.3s ease; }
-    .login-footer { text-align:center; margin-top:16px; font-size:12px; color:rgba(255,255,255,0.7); position:relative; z-index:1; }
+    .login-footer { text-align:center; margin-top:20px; font-size:11px; color:rgba(0,188,212,0.4); position:relative; z-index:1; letter-spacing:1px; }
+    .login-divider { width:60px; height:2px; background:linear-gradient(90deg,transparent,var(--secondary),transparent); margin:16px auto; }
     @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
   </style>
 </head>
 <body>
 <div class="login-page">
-  <div class="login-bg" id="bgDecor"></div>
+  <div class="login-grid"></div>
+  <div class="login-particles" id="particles"></div>
+  <div class="login-glow-top"></div>
+  <div class="login-glow-bot"></div>
   <div class="login-card">
+    <div class="login-badge"><span class="login-badge-text">TSMC BSID</span></div>
     <div class="login-logo"><span class="login-logo-icon">🏬</span></div>
     <h1 class="login-title">大江購物冒險</h1>
     <p class="login-subtitle">Metro Walk · 600人闖關大冒險</p>
+    <div class="login-divider"></div>
+    <div class="login-welcome">歡迎來到 <strong>TSMC BSID</strong> 部門年度團建活動<br>準備好展開一場科技冒險了嗎？</div>
     <form id="loginForm" onsubmit="return handleLogin(event)">
       <div class="form-group"><label class="form-label">你的姓名</label><input type="text" class="input" id="playerName" placeholder="請輸入姓名" required maxlength="20" autocomplete="off"></div>
       <div class="form-group"><label class="form-label">選擇你的隊伍（60組）</label><select class="select" id="teamSelect" required onchange="showTeamPreview()"><option value="">-- 請選擇隊伍 --</option></select></div>
@@ -38,16 +59,15 @@
       <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn" style="margin-top:24px;">🚀 加入冒險</button>
     </form>
   </div>
-  <p class="login-footer">大江購物中心 · GBF~5F 全館闖關</p>
+  <p class="login-footer">TSMC BSID · 大江購物中心 · GBF~5F 全館闖關</p>
 </div>
 <script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script>
 <script>
   if (Auth.isLoggedIn()) window.location.href = 'map.html';
   const select = document.getElementById('teamSelect');
   CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `第${t.id}組 ${t.emoji} ${t.name}`; select.appendChild(o); });
-  const bgIcons = ['🏬','🛍️','🎮','🏆','🎯','📸','🎵','🧩','🔨','🐍','👾','🧠'];
-  const bgEl = document.getElementById('bgDecor');
-  for (let i = 0; i < 60; i++) { const s = document.createElement('span'); s.textContent = bgIcons[i%bgIcons.length]; s.style.opacity = 0.3+Math.random()*0.4; s.style.fontSize = (24+Math.random()*24)+'px'; bgEl.appendChild(s); }
+  const particlesEl = document.getElementById('particles');
+  for (let i = 0; i < 20; i++) { const p = document.createElement('div'); p.className = 'login-particle'; p.style.left = Math.random()*100+'%'; p.style.animationDelay = Math.random()*6+'s'; p.style.animationDuration = (4+Math.random()*4)+'s'; particlesEl.appendChild(p); }
   function showTeamPreview() { const id = parseInt(select.value); const p = document.getElementById('teamPreview'); if (!id) { p.classList.remove('show'); return; } const t = getTeamById(id); document.getElementById('previewEmoji').textContent = t.emoji; document.getElementById('previewName').textContent = t.name; document.getElementById('previewNumber').textContent = `第 ${t.id} 組 · 每組10人`; p.classList.add('show'); AudioEngine.init(); AudioEngine.tapButton(); }
   async function handleLogin(e) { e.preventDefault(); const name = document.getElementById('playerName').value.trim(), teamId = document.getElementById('teamSelect').value; if (!name) { alert('請輸入姓名'); return false; } if (!teamId) { alert('請選擇隊伍'); return false; } const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.textContent = '加入中...'; try { AudioEngine.init(); AudioEngine.unlockGame(); API.init(); await Auth.register(name, teamId); window.location.href = 'map.html'; } catch { window.location.href = 'map.html'; } return false; }
 </script>

@@ -72,10 +72,10 @@ var DialogueScripts = {
 
   'dodge': [
     { char: '張博士', avatar: '👨‍🔬', text: '嗯哼，歡迎來到晶圓製造的世界。我是張博士，在台積電工作了整整三十年。', mood: 'normal', nameColor: '#00BCD4' },
-    { char: '張博士', avatar: '👨‍🔬', text: '你知道嗎？一片12吋晶圓要經過上千道製程，每一步都不能出錯，差一奈米就是廢片！', mood: 'thinking', nameColor: '#00BCD4' },
+    { char: '張博士', avatar: '👨‍🔬', text: '你知道嗎？一片12吋晶圓要經過上千道製程——清洗、光刻、蝕刻、封測，每一步都不能出錯！', mood: 'thinking', nameColor: '#00BCD4' },
     { char: '張博士', avatar: '👨‍🔬', text: '台灣的半導體是全世界的驕傲！你們手上的手機晶片，搞不好就是我做的喔！', mood: 'happy', nameColor: '#00BCD4' },
-    { char: '張博士', avatar: '👨‍🔬', text: '這個遊戲就像晶圓製程一樣，障礙物會從各方向飛來，你要靈活閃避，按順序通關！', mood: 'excited', nameColor: '#00BCD4' },
-    { char: '張博士', avatar: '👨‍🔬', text: '一片晶圓值幾萬美金，弄壞了你賠不起的！小心閃好，開始囉！', mood: 'excited', nameColor: '#00BCD4' }
+    { char: '張博士', avatar: '👨‍🔬', text: '你的任務是當排程工程師——把晶圓依序送入四個工站的正確插槽，用最有效率的排程製造出高良率的晶圓！', mood: 'excited', nameColor: '#00BCD4' },
+    { char: '張博士', avatar: '👨‍🔬', text: '一片晶圓值幾萬美金，放錯站或排錯順序就是廢片！集中精神，開始排程吧！', mood: 'excited', nameColor: '#00BCD4' }
   ],
 
   'reaction': [

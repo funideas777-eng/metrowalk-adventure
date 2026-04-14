@@ -6,25 +6,25 @@
   <meta name="theme-color" content="#E91E63">
   <link rel="manifest" href="manifest.json">
   <title>大江購物冒險</title>
-  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/common.css?v=4">
   <style>
     .content-area { padding-bottom:70px; }
     /* Section headers */
     .section-header { padding:16px 16px 8px; display:flex; align-items:center; gap:8px; }
     .section-header-icon { font-size:24px; }
-    .section-header-title { font-size:18px; font-weight:800; color:#333; }
+    .section-header-title { font-size:18px; font-weight:800; color:var(--text); }
     .section-header-badge { font-size:11px; background:var(--primary); color:white; padding:2px 8px; border-radius:10px; font-weight:700; }
     .section-desc { padding:0 16px 12px; font-size:13px; color:var(--text-light); line-height:1.5; }
 
     /* Game cards */
     .game-grid { padding:0 16px 16px; display:flex; flex-direction:column; gap:12px; }
-    .game-card { display:flex; align-items:center; gap:14px; padding:16px; background:white; border-radius:16px; box-shadow:var(--shadow); cursor:pointer; }
+    .game-card { display:flex; align-items:center; gap:14px; padding:16px; background:var(--bg-card); border:1px solid rgba(0,188,212,0.12); border-radius:16px; box-shadow:var(--shadow); cursor:pointer; backdrop-filter:blur(8px); }
     .game-card-icon { font-size:36px; width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
     .game-card-info { flex:1; min-width:0; }
     .game-card-name { font-size:15px; font-weight:700; }
     .game-card-desc { font-size:12px; color:var(--text-light); margin-top:2px; line-height:1.4; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
     .game-card-meta { font-size:11px; margin-top:4px; color:var(--primary); font-weight:600; }
-    .game-card-arrow { color:#ccc; font-size:18px; flex-shrink:0; }
+    .game-card-arrow { color:rgba(0,188,212,0.4); font-size:18px; flex-shrink:0; }
 
     /* Adventure cards - special styling */
     .adventure-card { position:relative; overflow:hidden; }
@@ -35,48 +35,48 @@
     .badge-pts { font-size:11px; color:#FF6F00; font-weight:700; }
 
     /* Story mission cards */
-    .story-card { background:linear-gradient(135deg,#fff,#fff5f8); border-left:4px solid var(--primary); }
+    .story-card { background:linear-gradient(135deg,rgba(233,30,99,0.08),rgba(0,188,212,0.05)); border-left:4px solid var(--primary); }
     .story-step { display:flex; align-items:center; gap:10px; padding:12px 16px; }
     .story-num { width:32px; height:32px; border-radius:50%; background:var(--primary); color:white; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; flex-shrink:0; }
     .story-text { font-size:14px; font-weight:600; }
     .story-sub { font-size:12px; color:var(--text-light); margin-top:2px; }
 
     /* Photo task detail */
-    .photo-requirement { background:rgba(233,30,99,0.08); border-radius:12px; padding:12px; margin-top:8px; }
+    .photo-requirement { background:rgba(233,30,99,0.1); border:1px solid rgba(233,30,99,0.15); border-radius:12px; padding:12px; margin-top:8px; }
     .photo-requirement-label { font-size:11px; color:var(--primary); font-weight:700; margin-bottom:4px; }
-    .photo-requirement-text { font-size:13px; color:#555; line-height:1.5; }
+    .photo-requirement-text { font-size:13px; color:var(--text-light); line-height:1.5; }
 
     /* Chat */
     .chat-fab { position:fixed; bottom:80px; right:16px; width:52px; height:52px; border-radius:50%; background:var(--primary); color:white; border:none; font-size:24px; box-shadow:0 4px 16px rgba(233,30,99,0.4); cursor:pointer; z-index:20; }
-    .chat-panel { position:fixed; bottom:0; left:0; right:0; height:60vh; background:white; border-radius:20px 20px 0 0; box-shadow:0 -4px 20px rgba(0,0,0,0.15); z-index:100; transform:translateY(100%); transition:transform 0.3s ease; display:flex; flex-direction:column; }
+    .chat-panel { position:fixed; bottom:0; left:0; right:0; height:60vh; background:rgba(15,15,35,0.95); border-radius:20px 20px 0 0; border-top:1px solid rgba(0,188,212,0.2); box-shadow:0 -4px 20px rgba(0,0,0,0.4); z-index:100; transform:translateY(100%); transition:transform 0.3s ease; display:flex; flex-direction:column; backdrop-filter:blur(20px); }
     .chat-panel.open { transform:translateY(0); }
-    .chat-header { padding:12px 16px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; gap:8px; }
-    .chat-ch-btn { padding:6px 14px; border-radius:20px; border:1.5px solid #e0e0e0; background:white; font-size:13px; cursor:pointer; font-weight:600; }
+    .chat-header { padding:12px 16px; border-bottom:1px solid rgba(0,188,212,0.15); display:flex; align-items:center; gap:8px; }
+    .chat-ch-btn { padding:6px 14px; border-radius:20px; border:1.5px solid rgba(0,188,212,0.3); background:transparent; color:var(--text); font-size:13px; cursor:pointer; font-weight:600; }
     .chat-ch-btn.active { background:var(--primary); color:white; border-color:var(--primary); }
     .chat-messages { flex:1; overflow-y:auto; padding:12px 16px; }
     .chat-msg { margin-bottom:10px; } .chat-msg-me { text-align:right; }
     .chat-msg-head { font-size:11px; color:#999; margin-bottom:2px; }
-    .chat-msg-body { display:inline-block; padding:8px 14px; border-radius:16px; background:#f0f0f0; font-size:14px; max-width:80%; text-align:left; word-break:break-word; }
+    .chat-msg-body { display:inline-block; padding:8px 14px; border-radius:16px; background:rgba(255,255,255,0.08); color:var(--text); font-size:14px; max-width:80%; text-align:left; word-break:break-word; }
     .chat-msg-me .chat-msg-body { background:var(--primary); color:white; }
-    .chat-input-bar { display:flex; gap:8px; padding:10px 16px; border-top:1px solid #f0f0f0; }
-    .chat-input-bar input { flex:1; border:1.5px solid #e0e0e0; border-radius:20px; padding:8px 16px; font-size:14px; outline:none; }
+    .chat-input-bar { display:flex; gap:8px; padding:10px 16px; border-top:1px solid rgba(0,188,212,0.15); }
+    .chat-input-bar input { flex:1; border:1.5px solid rgba(0,188,212,0.2); border-radius:20px; padding:8px 16px; font-size:14px; outline:none; background:rgba(255,255,255,0.05); color:var(--text); }
     .chat-input-bar button { background:var(--primary); color:white; border:none; border-radius:50%; width:38px; height:38px; font-size:16px; cursor:pointer; }
 
     /* Tab bar */
-    .tab-bar { position:fixed; bottom:0; left:0; right:0; display:flex; background:white; border-top:1px solid #eee; z-index:50; padding-bottom:env(safe-area-inset-bottom); }
+    .tab-bar { position:fixed; bottom:0; left:0; right:0; display:flex; background:rgba(10,10,26,0.95); border-top:1px solid rgba(0,188,212,0.15); z-index:50; padding-bottom:env(safe-area-inset-bottom); backdrop-filter:blur(10px); }
     .tab-item { flex:1; text-align:center; padding:8px 0; cursor:pointer; }
     .tab-item-icon { font-size:20px; } .tab-item-label { font-size:10px; color:var(--text-light); margin-top:2px; }
-    .tab-item.active .tab-item-label { color:var(--primary); font-weight:700; }
+    .tab-item.active .tab-item-label { color:var(--secondary); font-weight:700; }
 
     /* Floor sub-tabs for games */
     .floor-tabs { display:flex; overflow-x:auto; gap:6px; padding:8px 16px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .floor-tabs::-webkit-scrollbar { display:none; }
-    .floor-tab { flex-shrink:0; padding:6px 14px; border-radius:20px; background:white; border:2px solid #e0e0e0; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+    .floor-tab { flex-shrink:0; padding:6px 14px; border-radius:20px; background:rgba(255,255,255,0.06); border:2px solid rgba(0,188,212,0.2); color:var(--text); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
     .floor-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
 
     /* Ingredients list */
     .ingredients { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-    .ingredient-tag { font-size:11px; padding:3px 8px; border-radius:12px; background:#f5f5f5; color:#666; }
+    .ingredient-tag { font-size:11px; padding:3px 8px; border-radius:12px; background:rgba(255,255,255,0.08); color:var(--text-light); }
 
     /* Game status badges */
     .game-status { font-size:10px; padding:2px 8px; border-radius:8px; font-weight:700; margin-left:8px; }
@@ -92,6 +92,16 @@
     .emergency-title { color:white; font-size:15px; font-weight:800; }
     .emergency-desc { color:rgba(255,255,255,0.85); font-size:13px; margin-top:6px; line-height:1.5; }
     .emergency-time { color:rgba(255,255,255,0.6); font-size:11px; margin-top:8px; }
+
+    /* Countdown timer bar */
+    .countdown-bar { background:linear-gradient(90deg,#1a1a2e,#2a2a4e); padding:8px 16px; display:flex; align-items:center; justify-content:center; gap:10px; }
+    .countdown-label { font-size:12px; color:rgba(255,255,255,0.7); }
+    .countdown-time { font-size:20px; font-weight:900; color:#ffd700; font-family:monospace; letter-spacing:2px; }
+    .countdown-bar.expired { background:linear-gradient(90deg,#b71c1c,#d32f2f); }
+    .countdown-bar.expired .countdown-time { color:white; animation:blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity:0.4; } }
+    .game-card.card-time-locked { opacity:0.4; pointer-events:none; position:relative; }
+    .time-lock-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.3); border-radius:16px; color:white; font-weight:700; font-size:13px; }
   </style>
 </head>
 <body>
@@ -100,10 +110,14 @@
   <div class="top-bar-title">🏬 大江購物冒險</div>
   <button style="width:40px;background:none;border:none;font-size:18px;cursor:pointer;position:relative;" onclick="Broadcast.openMessages()">🔔<span id="broadcast-badge" style="display:none;position:absolute;top:2px;right:2px;background:#f44336;color:white;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;">0</span></button>
 </div>
+<div id="countdown-bar" class="countdown-bar">
+  <span class="countdown-label">⏱ 活動剩餘</span>
+  <span class="countdown-time" id="countdownTime">--:--</span>
+</div>
 <div id="notification-bar" class="notification-bar"></div>
 <div id="message-panel" class="message-panel"></div>
 
-<div class="content-area" id="contentArea"></div>
+<div class="content-area" id="contentArea" style="padding-top:4px;"></div>
 
 <!-- 聊天 -->
 <button class="chat-fab" onclick="Chat.open()">💬</button>
@@ -131,6 +145,10 @@
 
   // === Dialogue trigger ===
   function startDialogue(gameId, targetUrl) {
+    if (eventExpired) {
+      alert('活動時間已結束，無法進入遊戲！');
+      return;
+    }
     var script = (typeof DialogueScripts !== 'undefined') ? DialogueScripts[gameId] : null;
     if (script && script.length > 0) {
       Dialogue.show(script, function() {
@@ -161,17 +179,71 @@
     if (p.get('completed')) setGameCompleted(p.get('completed'));
   })();
 
-  // === Emergency tasks ===
+  // === Countdown timer & time lock ===
+  var eventExpired = false;
+  function updateCountdown() {
+    var now = new Date();
+    var endH = CONFIG.EVENT_END_HOUR || 14;
+    var end = new Date(now); end.setHours(endH, 0, 0, 0);
+    var startH = CONFIG.EVENT_START_HOUR || 10;
+    var start = new Date(now); start.setHours(startH, 0, 0, 0);
+    var bar = document.getElementById('countdown-bar');
+    var el = document.getElementById('countdownTime');
+    if (!el || !bar) return;
+
+    if (now < start) {
+      // Before event starts
+      var diff = Math.floor((start - now) / 1000);
+      var m = Math.floor(diff / 60); var s = diff % 60;
+      el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      bar.className = 'countdown-bar';
+      document.querySelector('.countdown-label').textContent = '⏳ 開始倒數';
+      eventExpired = false;
+    } else if (now >= end) {
+      el.textContent = '00:00';
+      bar.className = 'countdown-bar expired';
+      document.querySelector('.countdown-label').textContent = '🔒 活動已結束';
+      eventExpired = true;
+    } else {
+      var diff = Math.floor((end - now) / 1000);
+      var m = Math.floor(diff / 60); var s = diff % 60;
+      el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+      bar.className = 'countdown-bar';
+      document.querySelector('.countdown-label').textContent = '⏱ 活動剩餘';
+      eventExpired = false;
+    }
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  // === Emergency tasks (local config + server) ===
   var emergencyTasks = [];
   function loadEmergencyTasks() {
+    // Check local config emergency tasks by trigger time
+    var now = new Date();
+    var hhmm = (now.getHours() < 10 ? '0' : '') + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+    CONFIG.EMERGENCY_TASKS.forEach(function(t) {
+      if (t.triggerTime <= hhmm && !t._triggered) {
+        t.active = true;
+        t._triggered = true;
+      }
+    });
+    emergencyTasks = CONFIG.EMERGENCY_TASKS.filter(function(t) { return t.active; });
+    // Also fetch from server
     API.get('READ', { action:'getBroadcasts' }).then(function(res) {
       if (res && res.data) {
-        emergencyTasks = res.data.filter(function(b) { return b.type === 'emergency' && b.active; });
-        if (currentTab === 'games') renderContent();
+        var serverEmergency = res.data.filter(function(b) { return b.type === 'emergency' && b.active; });
+        serverEmergency.forEach(function(se) {
+          if (!emergencyTasks.find(function(e) { return e.id === se.id; })) {
+            emergencyTasks.push(se);
+          }
+        });
       }
+      if (currentTab === 'games') renderContent();
     }).catch(function() {});
   }
   loadEmergencyTasks();
+  setInterval(loadEmergencyTasks, 30000);
 
   function switchTab(tab) {
     if (tab === 'rank') { window.location.href = 'scoreboard.html'; return; }
@@ -246,10 +318,10 @@
     // Quick stats
     html += '<div class="section-header" style="margin-top:8px;"><span class="section-header-icon">📊</span><span class="section-header-title">快速統計</span></div>';
     html += '<div style="padding:0 16px 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">';
-    html += '<div style="background:white;border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">🎮</div><div style="font-size:24px;font-weight:900;color:var(--primary);">' + storyGames.length + '</div><div style="font-size:12px;color:var(--text-light);">遊戲關卡</div></div>';
-    html += '<div style="background:white;border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">🍳</div><div style="font-size:24px;font-weight:900;color:#FF6F00;">' + CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='cooking'}).length + '</div><div style="font-size:12px;color:var(--text-light);">美食任務</div></div>';
-    html += '<div style="background:white;border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">📸</div><div style="font-size:24px;font-weight:900;color:#E91E63;">' + CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='group-photo'}).length + '</div><div style="font-size:12px;color:var(--text-light);">打卡任務</div></div>';
-    html += '<div style="background:white;border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">✅</div><div style="font-size:24px;font-weight:900;color:#4CAF50;">' + completedCount + '</div><div style="font-size:12px;color:var(--text-light);">已完成</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">🎮</div><div style="font-size:24px;font-weight:900;color:var(--primary);">' + storyGames.length + '</div><div style="font-size:12px;color:var(--text-light);">遊戲關卡</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">🍳</div><div style="font-size:24px;font-weight:900;color:#FF6F00;">' + CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='cooking'}).length + '</div><div style="font-size:12px;color:var(--text-light);">美食任務</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">📸</div><div style="font-size:24px;font-weight:900;color:#E91E63;">' + CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='group-photo'}).length + '</div><div style="font-size:12px;color:var(--text-light);">打卡任務</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:16px;padding:16px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:28px;">✅</div><div style="font-size:24px;font-weight:900;color:#4CAF50;">' + completedCount + '</div><div style="font-size:12px;color:var(--text-light);">已完成</div></div>';
     html += '</div>';
 
     area.innerHTML = html;
@@ -289,9 +361,9 @@
     html += '</div>';
 
     // Photo task explanation
-    html += '<div style="margin:0 16px 16px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border-radius:16px;padding:16px;">';
-    html += '<div style="font-size:14px;font-weight:700;color:#E65100;">📋 美食任務流程</div>';
-    html += '<div style="font-size:13px;color:#BF360C;margin-top:8px;line-height:1.8;">';
+    html += '<div style="margin:0 16px 16px;background:linear-gradient(135deg,rgba(255,111,0,0.12),rgba(255,193,7,0.08));border:1px solid rgba(255,111,0,0.2);border-radius:16px;padding:16px;">';
+    html += '<div style="font-size:14px;font-weight:700;color:#FFB74D;">📋 美食任務流程</div>';
+    html += '<div style="font-size:13px;color:rgba(255,183,77,0.8);margin-top:8px;line-height:1.8;">';
     html += '① 完成料理小遊戲（達到門檻分數）<br>';
     html += '② 前往大江購物中心指定區域消費<br>';
     html += '③ 與購買的食物合照，上傳打卡<br>';
@@ -321,20 +393,39 @@
   // ========== 全部遊戲 ==========
   function renderAllGames(area) {
     var html = '';
+    var storyGames = CONFIG.GAMES.filter(function(g){return g.type!=='photo'});
+    var cookTasks = CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='cooking'});
+    var photoTasks = CONFIG.ADVENTURE_TASKS.filter(function(t){return t.type==='group-photo'});
+    var storyCompleted = storyGames.filter(function(g){ return getGameStatus(g.id)==='completed'; }).length;
+    var cookCompleted = cookTasks.filter(function(t){ return getGameStatus(t.id)==='completed'; }).length;
+
+    // Stats grid: 全部/劇情/冒險/緊急
+    html += '<div style="padding:12px 16px 4px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:22px;">🎮</div><div style="font-size:18px;font-weight:900;color:var(--primary);">' + (storyGames.length + cookTasks.length + photoTasks.length) + '</div><div style="font-size:10px;color:var(--text-light);">全部</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:22px;">📖</div><div style="font-size:18px;font-weight:900;color:#2196F3;">' + storyCompleted + '/' + storyGames.length + '</div><div style="font-size:10px;color:var(--text-light);">劇情任務</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:22px;">🍳</div><div style="font-size:18px;font-weight:900;color:#FF6F00;">' + cookCompleted + '/' + cookTasks.length + '</div><div style="font-size:10px;color:var(--text-light);">冒險任務</div></div>';
+    html += '<div style="background:var(--bg-card);border:1px solid rgba(0,188,212,0.12);border-radius:12px;padding:10px 6px;text-align:center;box-shadow:var(--shadow);"><div style="font-size:22px;">🚨</div><div style="font-size:18px;font-weight:900;color:#F44336;">' + emergencyTasks.length + '</div><div style="font-size:10px;color:var(--text-light);">緊急任務</div></div>';
+    html += '</div>';
 
     // Emergency tasks section
     if (emergencyTasks.length > 0) {
+      html += '<div class="section-header"><span class="section-header-icon">🚨</span><span class="section-header-title">緊急任務</span><span class="section-header-badge">進行中</span></div>';
       emergencyTasks.forEach(function(task) {
-        html += '<div class="emergency-banner">';
-        html += '<div class="emergency-title">🚨 緊急任務：' + (task.title || '特別任務') + '</div>';
-        html += '<div class="emergency-desc">' + (task.content || '') + '</div>';
-        html += '<div class="emergency-time">📢 ' + (task.timestamp || '') + '</div>';
-        html += '</div>';
+        var completed = getGameStatus(task.id) === 'completed';
+        html += '<div class="emergency-banner" style="' + (completed ? 'opacity:0.5;animation:none;' : '') + '">';
+        html += '<div class="emergency-title">' + (task.icon || '🚨') + ' ' + (task.name || task.title || '特別任務') + (completed ? ' ✅ 已完成' : '') + '</div>';
+        html += '<div class="emergency-desc">' + (task.description || task.content || '') + '</div>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">';
+        html += '<div class="emergency-time">🏅 +' + (task.points || 0) + ' 分</div>';
+        if (!completed) {
+          html += '<button onclick="event.stopPropagation();completeEmergency(\'' + task.id + '\')" style="background:white;color:#D50000;border:none;border-radius:12px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;">✅ 完成任務</button>';
+        }
+        html += '</div></div>';
       });
     }
 
     // Status filter tabs
-    var allGames = CONFIG.GAMES.filter(function(g){return g.type!=='photo'});
+    var allGames = storyGames;
     var completedCount = allGames.filter(function(g) { return getGameStatus(g.id) === 'completed'; }).length;
     html += '<div class="floor-tabs" id="statusTabs">';
     html += '<div class="floor-tab active" onclick="filterGames(\'all\',this)">🎮 全部 (' + allGames.length + ')</div>';
@@ -355,6 +446,21 @@
     html += '</div>';
 
     area.innerHTML = html;
+  }
+
+  // Complete emergency task
+  function completeEmergency(taskId) {
+    setGameCompleted(taskId);
+    var task = CONFIG.EMERGENCY_TASKS.find(function(t) { return t.id === taskId; });
+    var points = task ? task.points : 0;
+    var ses = Auth.getSession();
+    API.post('WRITE', {
+      action: 'submitScore', playerId: ses.playerId, playerName: ses.name,
+      teamId: ses.teamId, gameId: taskId, score: points
+    }).then(function() {
+      alert('緊急任務完成！團隊 +' + points + ' 分');
+      renderContent();
+    }).catch(function() { alert('提交失敗，請重試'); });
   }
 
   function renderGameCards(games) {
