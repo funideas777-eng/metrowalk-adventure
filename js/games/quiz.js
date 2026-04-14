@@ -51,9 +51,10 @@ window.QuizGame = {
     } else {
       this.streak = 0;
       this.game.resetCombo();
-      // Wrong answer = lose life
-      this.game.loseLife();
       AudioEngine.quizWrong();
+      // Wrong answer = lose life (check if game ends)
+      var livesLeft = this.game.loseLife();
+      if (livesLeft <= 0) return; // game over, endGame will handle cleanup
     }
     this.game.score = this.score; this.game.combo = this.streak; this.game.maxCombo = this.maxStreak; this.game.updateHUD();
     this.currentIdx++; this.roundQCount++;
@@ -64,7 +65,12 @@ window.QuizGame = {
       this.timePerQ = Math.max(4, 8 - (this.round-1)*2);
     }
     var self = this;
-    setTimeout(function() { if (self.game.running) self.showQuestion(); }, 1200);
+    setTimeout(function() {
+      if (!self.game.running) return;
+      var c = document.getElementById('quiz-container');
+      if (!c) return;
+      self.showQuestion();
+    }, 1200);
   },
 
   update() {}, render() {},

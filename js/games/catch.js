@@ -49,8 +49,8 @@ window.CatchGame = {
     for (var i = this.items.length - 1; i >= 0; i--) {
       this.items[i].y += this.fallSpeed;
       var item = this.items[i];
-      // Caught by basket
-      if (item.y >= this.canvasH - 55 && item.y <= this.canvasH - 20 &&
+      // Caught by basket (raised higher to avoid touch zone)
+      if (item.y >= this.canvasH - 110 && item.y <= this.canvasH - 70 &&
           item.x >= this.basket.x - 10 && item.x <= this.basket.x + this.basket.width + 10) {
         if (item.isBomb) {
           // Bomb = lose life
@@ -92,11 +92,14 @@ window.CatchGame = {
     // Items - LARGER fruit emoji (40px instead of 24px)
     ctx.font = '40px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     this.items.forEach(function(item) { ctx.fillText(item.emoji, item.x, item.y); });
-    // Basket
+    // Basket (raised higher, plate/basket visual)
+    ctx.fillStyle = '#D2691E';
+    ctx.beginPath();
+    ctx.ellipse(this.basket.x + this.basket.width/2, this.canvasH - 88, this.basket.width/2 + 5, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#8B4513';
-    ctx.fillRect(this.basket.x, this.canvasH - 45, this.basket.width, 22);
-    ctx.fillRect(this.basket.x + 5, this.canvasH - 55, this.basket.width - 10, 15);
-    ctx.font = '24px serif'; ctx.fillText('🧺', this.basket.x + this.basket.width/2, this.canvasH - 38);
+    ctx.fillRect(this.basket.x, this.canvasH - 100, this.basket.width, 16);
+    ctx.font = '36px serif'; ctx.fillText('🍽️', this.basket.x + this.basket.width/2, this.canvasH - 90);
   },
 
   cleanup() {

@@ -109,6 +109,9 @@ window.ShooterGame = {
   },
 
   shootArrow(targetX, targetY) {
+    // Only one arrow at a time - prevent rapid fire cheat
+    if (this.arrows.some(a => a.alive)) return;
+
     const dx = targetX - this.bowX;
     const dy = targetY - this.bowY;
     const dist = Math.sqrt(dx * dx + dy * dy);

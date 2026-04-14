@@ -21,10 +21,14 @@ window.ReactionGame = {
 
   init(game) {
     this.game = game;
-    this.score = 0; this.round = 1; this.combo = 0; this.maxCombo = 0;
+    this.score = 0; this.round = 2; this.combo = 0; this.maxCombo = 0;
     this.lives = 3; this.smashCount = 0;
     this.cards = Array(9).fill(null);
     this.expireTimers = [];
+    // Start at round 2 difficulty - update HUD
+    game.round = 2;
+    var rd = document.getElementById('roundDisplay');
+    if (rd) rd.textContent = 'R2';
 
     const canvas = game.canvas; canvas.style.display = 'none';
     let c = document.getElementById('reaction-container');

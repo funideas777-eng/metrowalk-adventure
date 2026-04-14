@@ -69,7 +69,7 @@ const CONFIG = {
       duration: 60, threshold: 200, color: '#FFD700', hasRounds: true,
       location: { lat: 24.95740, lng: 121.22560 } },
     { id: 'catch', name: '接水果', icon: '🧺', floor: 'GBF',
-      description: '左右移動接住掉落的水果！每回合速度加快',
+      description: '左右移動盤子接住水果！小心炸彈，每回合速度加快',
       duration: 60, threshold: 150, color: '#FF6B35', hasRounds: true,
       location: { lat: 24.95760, lng: 121.22600 } },
     // 1F
@@ -96,28 +96,88 @@ const CONFIG = {
       duration: 60, threshold: 100, color: '#2196F3', hasRounds: true,
       location: { lat: 24.95750, lng: 121.22570 } },
     { id: 'shooter', name: '弓箭挑戰', icon: '🏹', floor: '3F',
-      description: '拉弓瞄準射擊移動靶心！按住瞄準放開射出',
+      description: '拉弓瞄準射擊移動靶心！按住瞄準放開射出，連續3箭落空扣命',
       duration: 45, threshold: 150, color: '#F44336', hasRounds: true,
       location: { lat: 24.95730, lng: 121.22590 } },
     // 4F
     { id: 'dodge', name: '晶圓大師', icon: '💎', floor: '4F',
-      description: '模擬台積電晶圓製程！拖曳原料完成生產步驟',
+      description: '模擬台積電晶圓製程！將晶圓依序送入清洗→光刻→蝕刻→封測',
       duration: 60, threshold: 100, color: '#00BCD4', hasRounds: true,
       location: { lat: 24.95740, lng: 121.22600 } },
     { id: 'reaction', name: '色彩達人', icon: '🎨', floor: '4F',
-      description: '找出顏色與文字不配對的方塊並打碎！考驗你的反應力',
+      description: '史特魯普測試！點擊字色不符的卡片，別碰字色相符的',
       duration: 45, threshold: 100, color: '#E91E63', hasRounds: true,
       location: { lat: 24.95760, lng: 121.22580 } },
     // 5F
     { id: 'rhythm', name: '節奏大師', icon: '🎵', floor: '5F',
-      description: '跟著節拍點擊音符！支援長按與連按',
+      description: '跟著節拍點擊音符！2條軌道起步，破關後增為3條',
       duration: 60, threshold: 100, color: '#673AB7', hasRounds: true,
       location: { lat: 24.95750, lng: 121.22560 } },
+    { id: 'puzzle', name: '拼圖挑戰', icon: '🧩', floor: '5F',
+      description: '滑動拼塊還原圖案！每回合格數增加難度提升',
+      duration: 120, threshold: 100, color: '#009688', hasRounds: true,
+      location: { lat: 24.95740, lng: 121.22570 } },
     { id: 'photo', name: '拍照打卡', icon: '📸', floor: '5F',
       type: 'photo',
       description: '在指定地點拍攝現場照片上傳，管理員驗證通過得分',
       points: 300, color: '#FF9800', hasRounds: false,
       location: { lat: 24.95730, lng: 121.22600 } }
+  ],
+
+  // ========== 冒險任務 ==========
+  ADVENTURE_TASKS: [
+    // --- 5 款美食小遊戲 (完成遊戲 + 消費拍照 = 250分) ---
+    { id: 'cook-boba', name: '珍珠奶茶', icon: '🧋', type: 'cooking',
+      description: '煮珍珠、沖茶、加奶、加冰、攪拌，完成一杯珍珠奶茶！',
+      ingredients: ['黑糖珍珠', '鮮奶', '紅茶', '冰塊'],
+      dish: '珍珠奶茶', dishEmoji: '🧋',
+      photoTask: '前往 GBF 美食街購買飲料，與飲料合照打卡',
+      teamPoints: 250, duration: 60, threshold: 200, color: '#8D6E63',
+      location: { lat: 24.95740, lng: 121.22560 } },
+    { id: 'cook-beef', name: '牛肉麵', icon: '🍜', type: 'cooking',
+      description: '切肉、炒醬、燉湯、煮麵、擺盤，完成一碗牛肉麵！',
+      ingredients: ['牛腱肉', '麵條', '蔥花', '辣豆瓣醬', '高湯'],
+      dish: '牛肉麵', dishEmoji: '🍜',
+      photoTask: '前往餐廳享用一碗麵食，與美食合照打卡',
+      teamPoints: 250, duration: 60, threshold: 200, color: '#D84315',
+      location: { lat: 24.95750, lng: 121.22580 } },
+    { id: 'cook-dumpling', name: '小籠包', icon: '🥟', type: 'cooking',
+      description: '和餡、擀皮、包餡、蒸籠、沾醬，完成小籠包！',
+      ingredients: ['豬肉餡', '薄皮', '蔥薑水', '醬油'],
+      dish: '小籠包', dishEmoji: '🥟',
+      photoTask: '前往餐廳品嚐點心，與美食合照打卡',
+      teamPoints: 250, duration: 60, threshold: 200, color: '#FFA726',
+      location: { lat: 24.95730, lng: 121.22570 } },
+    { id: 'cook-shaved', name: '芒果冰', icon: '🍧', type: 'cooking',
+      description: '刨冰、堆山、切芒果、淋醬、擺盤，完成芒果冰！',
+      ingredients: ['芒果', '煉乳', '刨冰', '芒果醬', '小湯圓'],
+      dish: '芒果冰', dishEmoji: '🍧',
+      photoTask: '前往甜品店購買冰品或飲料，與甜品合照打卡',
+      teamPoints: 250, duration: 60, threshold: 200, color: '#FFB300',
+      location: { lat: 24.95760, lng: 121.22590 } },
+    { id: 'cook-cake', name: '鳳梨酥', icon: '🍪', type: 'cooking',
+      description: '揉麵、包餡、壓模、烘烤、裝飾，完成鳳梨酥！',
+      ingredients: ['鳳梨餡', '奶油', '麵粉', '蛋黃', '糖粉'],
+      dish: '鳳梨酥', dishEmoji: '🍪',
+      photoTask: '前往烘焙坊或甜品店購買糕點，與點心合照打卡',
+      teamPoints: 250, duration: 60, threshold: 200, color: '#A1887F',
+      location: { lat: 24.95740, lng: 121.22600 } },
+    // --- 3 景點打卡任務 ---
+    { id: 'photo-heart', name: '大愛心合照', icon: '💕', type: 'group-photo',
+      description: '全隊至少 20 人在大江中庭，一起比出大愛心拍照！',
+      condition: '至少 20 人一起比出大愛心',
+      teamPoints: 250, color: '#E91E63',
+      location: { lat: 24.95750, lng: 121.22580 } },
+    { id: 'photo-jump', name: '飛躍大江', icon: '🦸', type: 'group-photo',
+      description: '全隊在大江入口處，一起跳躍拍出飛躍照！',
+      condition: '全隊成員一起跳躍，拍出騰空效果',
+      teamPoints: 250, color: '#2196F3',
+      location: { lat: 24.95730, lng: 121.22560 } },
+    { id: 'photo-pyramid', name: '人體金字塔', icon: '🏛️', type: 'group-photo',
+      description: '全隊合作疊出人體金字塔或創意隊形，展現團隊默契！',
+      condition: '全隊排出創意隊形（金字塔、字母等）',
+      teamPoints: 250, color: '#4CAF50',
+      location: { lat: 24.95760, lng: 121.22600 } }
   ],
 
   // 團隊加分規則（前5名）
@@ -190,5 +250,13 @@ const TEST_MODE = new URLSearchParams(window.location.search).has('test');
 
 // 工具函式
 function getTeamById(id) { return CONFIG.TEAMS.find(t => t.id === parseInt(id)); }
-function getGameById(id) { return CONFIG.GAMES.find(g => g.id === id); }
+function getGameById(id) {
+  var g = CONFIG.GAMES.find(function(g) { return g.id === id; });
+  if (g) return g;
+  // Also check adventure cooking tasks
+  var a = CONFIG.ADVENTURE_TASKS.find(function(t) { return t.id === id; });
+  if (a) return a;
+  return null;
+}
 function getFloorGames(floorId) { return CONFIG.GAMES.filter(g => g.floor === floorId); }
+function getAdventureTask(id) { return CONFIG.ADVENTURE_TASKS.find(function(t) { return t.id === id; }); }

@@ -176,7 +176,12 @@
     dodge:{file:'js/games/dodge.js',engine:'DodgeGame'},
     reaction:{file:'js/games/reaction.js',engine:'ReactionGame'},
     rhythm:{file:'js/games/rhythm.js',engine:'RhythmGame'},
-    puzzle:{file:'js/games/puzzle.js',engine:'PuzzleGame'}
+    puzzle:{file:'js/games/puzzle.js',engine:'PuzzleGame'},
+    'cook-boba':{file:'js/games/cook-boba.js',engine:'CookBobaGame'},
+    'cook-beef':{file:'js/games/cook-beef.js',engine:'CookBeefGame'},
+    'cook-dumpling':{file:'js/games/cook-dumpling.js',engine:'CookDumplingGame'},
+    'cook-shaved':{file:'js/games/cook-shaved.js',engine:'CookShavedGame'},
+    'cook-cake':{file:'js/games/cook-cake.js',engine:'CookCakeGame'}
   };
 
   let gameEngine = null;
@@ -386,7 +391,10 @@
   }
 
   // === End Game ===
+  var _gameEnded = false;
   function endGame() {
+    if (_gameEnded) return; // prevent double call
+    _gameEnded = true;
     if (GameState.timer) { clearInterval(GameState.timer); GameState.timer = null; }
     GameState.running = false;
     if (GameState.animFrame) { cancelAnimationFrame(GameState.animFrame); GameState.animFrame = null; }
@@ -442,6 +450,12 @@
       });
       btn.className = 'btn btn-primary btn-lg btn-submit submitted';
       btn.textContent = '✅ 已提交成功！';
+      // Mark game as completed in localStorage
+      try {
+        var gs = JSON.parse(localStorage.getItem('gameStatus') || '{}');
+        gs[gameId] = 'completed';
+        localStorage.setItem('gameStatus', JSON.stringify(gs));
+      } catch(e) {}
       AudioEngine.uploadSuccess();
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     } catch (err) {

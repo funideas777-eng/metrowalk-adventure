@@ -18,6 +18,7 @@ window.DodgeGame = {
   idleCheckTimer: null,
   nextWaferId: 0,
   animFrame: 0,
+  flashStations: {},  // stationIndex -> flash end timestamp
 
   // --- Station definitions ---
   STEPS: [
@@ -48,6 +49,7 @@ window.DodgeGame = {
     this.spawnInterval = 6000;
     this.nextWaferId = 0;
     this.animFrame = 0;
+    this.flashStations = {};
 
     // Build station layout
     this._buildStations();
@@ -84,13 +86,18 @@ window.DodgeGame = {
   // =========================================================
   _buildStations() {
     this.stations = [];
-    const margin = 12;
-    const stationH = 70;
+    const slotsPerStation = this.round >= 3 ? 3 : 2;
+    const margin = 10;
+    const stationH = 30 + slotsPerStation * 40;
     const totalH = this.STEPS.length * (stationH + margin);
     const startY = Math.floor((this.canvasH - totalH) / 2) + 20;
     const stationW = this.canvasW - margin * 2;
 
     for (let i = 0; i < this.STEPS.length; i++) {
+      const slots = [];
+      for (let s = 0; s < slotsPerStation; s++) {
+        slots.push({ wafer: null });
+      }
       this.stations.push({
         index: i,
         x: margin,
@@ -98,7 +105,7 @@ window.DodgeGame = {
         w: stationW,
         h: stationH,
         step: this.STEPS[i],
-        wafer: null  // wafer currently processing here
+        slots: slots
       });
     }
   },
@@ -127,6 +134,7 @@ window.DodgeGame = {
       processStart: 0,
       readySince: 0,
       stationIndex: -1,
+      slotIndex: -1,
       glow: 0
     };
     this.queue.push(wafer);
@@ -142,9 +150,12 @@ window.DodgeGame = {
     for (const w of this.wafers) {
       if (w.state === 'ready' && (now - w.readySince) > this.IDLE_SPOIL_TIME) {
         w.state = 'spoiled';
-        // Free the station
+        // Free the station slot
         if (w.stationIndex >= 0 && this.stations[w.stationIndex]) {
-          this.stations[w.stationIndex].wafer = null;
+          const station = this.stations[w.stationIndex];
+          if (w.slotIndex >= 0 && station.slots[w.slotIndex]) {
+            station.slots[w.slotIndex].wafer = null;
+          }
         }
         if (typeof AudioEngine !== 'undefined') AudioEngine.penalty();
         this.game.loseLife();
@@ -243,11 +254,9 @@ window.DodgeGame = {
     // Check wafers at stations that are ready to move
     for (const w of this.wafers) {
       if (w.state === 'ready') {
-        const s = this.stations[w.stationIndex];
-        if (!s) continue;
-        const wx = s.x + s.w - 35;
-        const wy = s.y + s.h / 2;
-        const dx = x - wx, dy = y - wy;
+        const pos = this._getSlotWaferPos(w);
+        if (!pos) continue;
+        const dx = x - pos.x, dy = y - pos.y;
         if (dx * dx + dy * dy < r * r) return w;
       }
     }
@@ -260,6 +269,24 @@ window.DodgeGame = {
       if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return i;
     }
     return null;
+  },
+
+  // =========================================================
+  // SLOT POSITION HELPERS
+  // =========================================================
+  _getSlotPos(station, slotIndex) {
+    // Each slot is rendered as a horizontal sub-area within the station
+    const slotH = 36;
+    const slotY = station.y + 30 + slotIndex * (slotH + 4);
+    return { x: station.x, y: slotY, w: station.w, h: slotH };
+  },
+
+  _getSlotWaferPos(wafer) {
+    if (wafer.stationIndex < 0 || wafer.slotIndex < 0) return null;
+    const station = this.stations[wafer.stationIndex];
+    if (!station) return null;
+    const slotPos = this._getSlotPos(station, wafer.slotIndex);
+    return { x: slotPos.x + slotPos.w - 35, y: slotPos.y + slotPos.h / 2 };
   },
 
   // =========================================================
@@ -278,26 +305,39 @@ window.DodgeGame = {
       return;
     }
 
-    // Check station is not occupied
+    // Find first available slot
     const station = this.stations[stationIndex];
-    if (station.wafer && station.wafer !== wafer) {
-      // Station busy - just ignore (don't penalize)
+    let freeSlotIndex = -1;
+    for (let i = 0; i < station.slots.length; i++) {
+      if (!station.slots[i].wafer) {
+        freeSlotIndex = i;
+        break;
+      }
+    }
+
+    if (freeSlotIndex === -1) {
+      // All slots occupied - flash red feedback, no penalty
+      this.flashStations[stationIndex] = Date.now() + 400;
       return;
     }
 
-    // Free previous station if wafer was ready there
+    // Free previous station slot if wafer was ready there
     if (wafer.stationIndex >= 0 && this.stations[wafer.stationIndex]) {
-      this.stations[wafer.stationIndex].wafer = null;
+      const prevStation = this.stations[wafer.stationIndex];
+      if (wafer.slotIndex >= 0 && prevStation.slots[wafer.slotIndex]) {
+        prevStation.slots[wafer.slotIndex].wafer = null;
+      }
     }
 
     // Remove from queue if it was there
     this._removeFromQueue(wafer);
 
-    // Assign to station
+    // Assign to station slot
     wafer.state = 'processing';
     wafer.stationIndex = stationIndex;
+    wafer.slotIndex = freeSlotIndex;
     wafer.processStart = Date.now();
-    station.wafer = wafer;
+    station.slots[freeSlotIndex].wafer = wafer;
   },
 
   _removeFromQueue(wafer) {
@@ -346,7 +386,10 @@ window.DodgeGame = {
           // Check if wafer is fully completed (all 4 steps)
           if (w.currentStep >= 4) {
             w.state = 'completed';
-            station.wafer = null;
+            // Free the slot
+            if (w.slotIndex >= 0 && station.slots[w.slotIndex]) {
+              station.slots[w.slotIndex].wafer = null;
+            }
             this.game.addScore(100);
             this.game.addCombo();
             this.completedCount++;
@@ -377,6 +420,29 @@ window.DodgeGame = {
       this.spawnInterval = Math.max(2000, 6000 - (this.round - 1) * 1000);
       this._startSpawning();
       this.game.showRoundBanner(this.round);
+
+      // Rebuild stations with more slots at round 3+
+      if (this.round === 3) {
+        // Migrate existing wafers: collect wafers currently in stations
+        const activeWafers = this.wafers.filter(
+          (w) => w.state === 'processing' || w.state === 'ready'
+        );
+        this._buildStations();
+        // Re-assign active wafers to their stations/slots
+        for (const w of activeWafers) {
+          if (w.stationIndex >= 0 && w.stationIndex < this.stations.length) {
+            const station = this.stations[w.stationIndex];
+            // Find a free slot
+            for (let i = 0; i < station.slots.length; i++) {
+              if (!station.slots[i].wafer) {
+                station.slots[i].wafer = w;
+                w.slotIndex = i;
+                break;
+              }
+            }
+          }
+        }
+      }
     }
   },
 
@@ -422,7 +488,8 @@ window.DodgeGame = {
     }
 
     // --- Draw shipping zone ---
-    const shippingY = this.stations[3].y + this.stations[3].h + 16;
+    const lastStation = this.stations[this.stations.length - 1];
+    const shippingY = lastStation.y + lastStation.h + 12;
     ctx.fillStyle = '#2a2a4e';
     ctx.strokeStyle = '#4a4a6e';
     ctx.lineWidth = 1;
@@ -453,42 +520,178 @@ window.DodgeGame = {
     }
   },
 
+  // =========================================================
+  // STATION BACKGROUND PATTERNS
+  // =========================================================
+  _drawStationPattern(ctx, station) {
+    const s = station;
+    const step = s.step;
+    ctx.save();
+
+    // Clip to station rounded rect
+    this._roundRect(ctx, s.x, s.y, s.w, s.h, 10);
+    ctx.clip();
+
+    const t = this.animFrame * 0.03;
+
+    if (step.nameEn === 'Clean') {
+      // Blue water-wave background
+      ctx.fillStyle = '#0d1f3c';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = 'rgba(74, 158, 255, 0.15)';
+      ctx.lineWidth = 2;
+      for (let row = 0; row < 6; row++) {
+        ctx.beginPath();
+        const baseY = s.y + row * 18 + 5;
+        for (let px = s.x; px <= s.x + s.w; px += 2) {
+          const wy = baseY + Math.sin((px - s.x) * 0.04 + t + row * 0.8) * 5;
+          if (px === s.x) ctx.moveTo(px, wy);
+          else ctx.lineTo(px, wy);
+        }
+        ctx.stroke();
+      }
+    } else if (step.nameEn === 'Litho') {
+      // Purple with circuit pattern
+      ctx.fillStyle = '#1a0f2e';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = 'rgba(155, 89, 182, 0.12)';
+      ctx.lineWidth = 1;
+      const grid = 16;
+      for (let gx = s.x; gx < s.x + s.w; gx += grid) {
+        for (let gy = s.y; gy < s.y + s.h; gy += grid) {
+          const hash = ((gx * 7 + gy * 13) & 0xff);
+          ctx.beginPath();
+          if (hash % 3 === 0) {
+            ctx.moveTo(gx, gy);
+            ctx.lineTo(gx + grid, gy);
+            ctx.lineTo(gx + grid, gy + grid / 2);
+          } else if (hash % 3 === 1) {
+            ctx.moveTo(gx, gy + grid / 2);
+            ctx.lineTo(gx + grid / 2, gy + grid / 2);
+            ctx.lineTo(gx + grid / 2, gy + grid);
+          } else {
+            ctx.rect(gx + 4, gy + 4, grid - 8, grid - 8);
+          }
+          ctx.stroke();
+        }
+      }
+    } else if (step.nameEn === 'Etch') {
+      // Orange with spark/fire effect
+      ctx.fillStyle = '#1f1208';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      for (let i = 0; i < 12; i++) {
+        const sx = s.x + ((i * 37 + this.animFrame * 0.7) % s.w);
+        const sy = s.y + ((i * 53 + Math.sin(t + i) * 10) % s.h);
+        const sparkR = 2 + Math.sin(t * 2 + i) * 1.5;
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, sparkR * 4);
+        grad.addColorStop(0, 'rgba(230, 126, 34, 0.25)');
+        grad.addColorStop(0.5, 'rgba(230, 126, 34, 0.08)');
+        grad.addColorStop(1, 'rgba(230, 126, 34, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(sx - sparkR * 4, sy - sparkR * 4, sparkR * 8, sparkR * 8);
+      }
+    } else if (step.nameEn === 'Pack') {
+      // Green with checkmark pattern
+      ctx.fillStyle = '#0a1f12';
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = 'rgba(46, 204, 113, 0.1)';
+      ctx.lineWidth = 1.5;
+      const sp = 28;
+      for (let gx = s.x + 8; gx < s.x + s.w; gx += sp) {
+        for (let gy = s.y + 8; gy < s.y + s.h; gy += sp) {
+          ctx.beginPath();
+          ctx.moveTo(gx, gy + 5);
+          ctx.lineTo(gx + 4, gy + 9);
+          ctx.lineTo(gx + 10, gy);
+          ctx.stroke();
+        }
+      }
+    }
+
+    ctx.restore();
+  },
+
   _drawStation(ctx, station) {
     const s = station;
     const step = s.step;
+    const now = Date.now();
 
-    // Station background
-    ctx.fillStyle = '#16213e';
-    ctx.strokeStyle = step.color + '88';
-    ctx.lineWidth = 2;
+    // Check if station is flashing red (all slots full feedback)
+    const isFlashing = this.flashStations[s.index] && now < this.flashStations[s.index];
+
+    // Station background pattern
+    this._drawStationPattern(ctx, station);
+
+    // Station border
+    if (isFlashing) {
+      ctx.strokeStyle = '#ff3333';
+      ctx.lineWidth = 3;
+    } else {
+      ctx.strokeStyle = step.color + 'aa';
+      ctx.lineWidth = 2;
+    }
     this._roundRect(ctx, s.x, s.y, s.w, s.h, 10);
-    ctx.fill();
     ctx.stroke();
 
-    // Station label
+    // Station label (top area)
     ctx.fillStyle = step.color;
-    ctx.font = 'bold 13px sans-serif';
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${step.icon} ${step.name}`, s.x + 10, s.y + 18);
+    ctx.fillText(`${step.icon} ${step.name}`, s.x + 8, s.y + 14);
 
     ctx.fillStyle = '#667788';
     ctx.font = '10px sans-serif';
-    ctx.fillText(`(${step.nameEn} ${step.duration / 1000}s)`, s.x + 10, s.y + 34);
+    ctx.fillText(`(${step.nameEn} ${step.duration / 1000}s)`, s.x + 60, s.y + 14);
 
     // Step number indicator
     ctx.fillStyle = step.color + '44';
-    ctx.font = 'bold 28px sans-serif';
+    ctx.font = 'bold 22px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${s.index + 1}`, s.x + s.w - 8, s.y + 22);
+    ctx.fillText(`${s.index + 1}`, s.x + s.w - 6, s.y + 16);
 
-    // Progress bar
-    if (s.wafer && s.wafer.state === 'processing') {
-      const elapsed = Date.now() - s.wafer.processStart;
+    // Slot count indicator
+    ctx.fillStyle = '#556677';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'right';
+    const usedSlots = s.slots.filter((sl) => sl.wafer !== null).length;
+    ctx.fillText(`${usedSlots}/${s.slots.length}`, s.x + s.w - 6, s.y + s.h - 6);
+
+    // Draw each slot
+    for (let si = 0; si < s.slots.length; si++) {
+      this._drawSlot(ctx, s, si);
+    }
+  },
+
+  _drawSlot(ctx, station, slotIndex) {
+    const slot = station.slots[slotIndex];
+    const step = station.step;
+    const sp = this._getSlotPos(station, slotIndex);
+
+    // Slot background
+    ctx.fillStyle = slot.wafer ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)';
+    ctx.strokeStyle = slot.wafer ? step.color + '55' : '#333344';
+    ctx.lineWidth = 1;
+    this._roundRect(ctx, sp.x + 6, sp.y, sp.w - 12, sp.h, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Slot label
+    ctx.fillStyle = '#445566';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`slot ${slotIndex + 1}`, sp.x + 10, sp.y + sp.h / 2);
+
+    if (slot.wafer && slot.wafer.state === 'processing') {
+      const w = slot.wafer;
+      const elapsed = Date.now() - w.processStart;
       const progress = Math.min(1, elapsed / step.duration);
-      const barX = s.x + 10;
-      const barY = s.y + s.h - 20;
-      const barW = s.w - 60;
+
+      // Progress bar
+      const barX = sp.x + 56;
+      const barY = sp.y + sp.h / 2 - 5;
+      const barW = sp.w - 110;
       const barH = 10;
 
       // Bar background
@@ -505,17 +708,21 @@ window.DodgeGame = {
 
       // Percentage text
       ctx.fillStyle = '#ffffff';
-      ctx.font = '9px sans-serif';
+      ctx.font = '8px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(`${Math.floor(progress * 100)}%`, barX + barW / 2, barY + barH / 2 + 1);
 
-      // Draw wafer in station
-      this._drawWafer(ctx, s.x + s.w - 35, s.y + s.h / 2, s.wafer, false);
+      // Draw wafer in slot
+      const waferX = sp.x + sp.w - 35;
+      const waferY = sp.y + sp.h / 2;
+      this._drawWafer(ctx, waferX, waferY, w, false);
     }
 
-    // Wafer ready at station (pulsing)
-    if (s.wafer && s.wafer.state === 'ready') {
-      this._drawWafer(ctx, s.x + s.w - 35, s.y + s.h / 2, s.wafer, false);
+    // Wafer ready at slot (pulsing)
+    if (slot.wafer && slot.wafer.state === 'ready') {
+      const waferX = sp.x + sp.w - 35;
+      const waferY = sp.y + sp.h / 2;
+      this._drawWafer(ctx, waferX, waferY, slot.wafer, false);
     }
   },
 
@@ -613,8 +820,7 @@ window.DodgeGame = {
       return { x: wafer.x, y: wafer.y };
     }
     if ((wafer.state === 'ready' || wafer.state === 'processing') && wafer.stationIndex >= 0) {
-      const s = this.stations[wafer.stationIndex];
-      return { x: s.x + s.w - 35, y: s.y + s.h / 2 };
+      return this._getSlotWaferPos(wafer);
     }
     return null;
   },

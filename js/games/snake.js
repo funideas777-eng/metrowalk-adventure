@@ -10,10 +10,12 @@ window.SnakeGame = {
 
   init(game) {
     this.game = game; this.score = 0; this.round = 1;
-    this.speed = 150; this.roundTarget = 10;
+    this.speed = 120; this.roundTarget = 10;
     var canvas = game.canvas;
     this.cols = Math.floor(canvas.width / this.cellSize);
-    this.rows = Math.floor(canvas.height / this.cellSize);
+    // Reserve top area for text (offset 1 row)
+    this.rows = Math.floor((canvas.height - 24) / this.cellSize);
+    this.gridOffsetY = 24;
     this.startRound();
     this.setupControls(canvas);
     var self = this;
@@ -28,7 +30,10 @@ window.SnakeGame = {
 
   startRound() {
     this.direction = 'right'; this.nextDirection = 'right';
-    var midX = Math.floor(this.cols / 2), midY = Math.floor(this.rows / 2);
+    // Spawn in center with enough room to move right
+    var midX = Math.max(3, Math.floor(this.cols / 2));
+    var midY = Math.max(1, Math.floor(this.rows / 2));
+    if (midX >= this.cols - 1) midX = Math.floor(this.cols / 2);
     this.snake = [{ x: midX, y: midY }, { x: midX-1, y: midY }, { x: midX-2, y: midY }];
     this.spawnFood();
     if (this.moveTimer) clearTimeout(this.moveTimer);
@@ -98,7 +103,7 @@ window.SnakeGame = {
         self.score += 200 * self.round; self.game.score = self.score; self.game.updateHUD();
         self.round++;
         self.game.showRoundBanner(self.round);
-        self.speed = Math.max(70, 150 - (self.round - 1) * 30);
+        self.speed = Math.max(60, 120 - (self.round - 1) * 20);
         self.roundTarget += 5;
         self.startRound(); return;
       }
@@ -112,15 +117,18 @@ window.SnakeGame = {
   update() {},
   render() {
     var ctx = this.game.ctx, cs = this.cellSize, canvas = this.game.canvas;
+    var oy = this.gridOffsetY || 0;
     ctx.fillStyle = '#1a1a2e'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-    for (var x = 0; x < this.cols; x++) for (var y = 0; y < this.rows; y++) ctx.strokeRect(x*cs, y*cs, cs, cs);
-    var self = this;
-    this.snake.forEach(function(s, i) { ctx.fillStyle = i === 0 ? '#4CAF50' : 'rgba(76,175,80,'+(1-i/self.snake.length*0.5)+')'; ctx.fillRect(s.x*cs+1, s.y*cs+1, cs-2, cs-2); });
-    if (this.food) { ctx.font = (cs-4)+'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(this.food.emoji, this.food.x*cs+cs/2, this.food.y*cs+cs/2); }
-    if (this.goldenFood) { ctx.font = (cs-2)+'px serif'; ctx.fillText('⭐', this.goldenFood.x*cs+cs/2, this.goldenFood.y*cs+cs/2); }
+    // Info text ABOVE grid
     ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
-    ctx.fillText('Round ' + this.round + ' | 目標長度: ' + (this.roundTarget + 3), 4, 14);
+    ctx.fillText('Round ' + this.round + ' | 長度: ' + this.snake.length + ' / ' + (this.roundTarget + 3), 4, 14);
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    for (var x = 0; x < this.cols; x++) for (var y = 0; y < this.rows; y++) ctx.strokeRect(x*cs, y*cs+oy, cs, cs);
+    var self = this;
+    this.snake.forEach(function(s, i) { ctx.fillStyle = i === 0 ? '#4CAF50' : 'rgba(76,175,80,'+(1-i/self.snake.length*0.5)+')'; ctx.fillRect(s.x*cs+1, s.y*cs+oy+1, cs-2, cs-2); });
+    if (this.food) { ctx.font = (cs-4)+'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(this.food.emoji, this.food.x*cs+cs/2, this.food.y*cs+oy+cs/2); }
+    if (this.goldenFood) { ctx.font = (cs-2)+'px serif'; ctx.fillText('⭐', this.goldenFood.x*cs+cs/2, this.goldenFood.y*cs+oy+cs/2); }
   },
   cleanup() {
     if (this.moveTimer) clearTimeout(this.moveTimer);

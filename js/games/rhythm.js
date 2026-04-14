@@ -1,15 +1,17 @@
 window.RhythmGame = {
-  lanes: 3, notes: [], score: 0, round: 1, hits: 0,
+  lanes: 2, notes: [], score: 0, round: 1, hits: 0,
   combo: 0, maxCombo: 0, noteSpeed: 3, spawnRate: 500,
   hitZoneY: 0, spawnTimer: null,
   canvasW: 0, canvasH: 0, laneWidth: 0,
   holdNotes: {}, // lane -> { start, target, active }
   effects: [], // visual effects
+  consecutiveMisses: 0, // for increasing miss penalty
 
   init(game) {
     this.game = game; this.score = 0; this.round = 1; this.hits = 0;
-    this.combo = 0; this.maxCombo = 0;
+    this.combo = 0; this.maxCombo = 0; this.consecutiveMisses = 0;
     this.noteSpeed = 3; this.spawnRate = 500; // Faster first stage
+    this.lanes = 2; // Start with 2 lanes, add 3rd at round 2
     this.notes = []; this.effects = []; this.holdNotes = {};
     this.canvasW = game.canvas.width; this.canvasH = game.canvas.height;
     this.laneWidth = Math.floor(this.canvasW / this.lanes);
@@ -114,7 +116,7 @@ window.RhythmGame = {
         else AudioEngine.rhythmGood();
       }
 
-      this.hits++; this.combo++;
+      this.hits++; this.combo++; this.consecutiveMisses = 0;
       if (this.combo > this.maxCombo) this.maxCombo = this.combo;
       this.score += pts;
       AudioEngine.comboHit(this.combo);
@@ -135,6 +137,11 @@ window.RhythmGame = {
         this.score += 200 * this.round; this.game.score = this.score; this.game.updateHUD();
         this.round++; this.hits = 0;
         this.game.showRoundBanner(this.round);
+        // Add 3rd lane at round 2
+        if (this.round >= 2 && this.lanes < 3) {
+          this.lanes = 3;
+          this.laneWidth = Math.floor(this.canvasW / this.lanes);
+        }
         this.noteSpeed = Math.min(7, 3 + (this.round - 1) * 0.8);
         this.spawnRate = Math.max(250, 500 - (this.round - 1) * 80);
         this.notes = [];
@@ -167,7 +174,18 @@ window.RhythmGame = {
       this.notes[i].y += this.noteSpeed;
       if (this.notes[i].y > this.canvasH + 30) {
         if (!this.notes[i].hit) {
-          this.combo = 0; this.game.combo = 0; this.game.updateHUD();
+          this.combo = 0; this.game.combo = 0;
+          this.consecutiveMisses++;
+          // Increasing penalty: -5, -10, -15... per consecutive miss
+          var penalty = Math.min(this.consecutiveMisses * 5, 30);
+          this.score = Math.max(0, this.score - penalty);
+          this.game.score = this.score;
+          this.game.updateHUD();
+          // Every 5 consecutive misses = lose life
+          if (this.consecutiveMisses % 5 === 0) {
+            this.game.loseLife();
+          }
+          AudioEngine.rhythmMiss();
         }
         this.notes.splice(i, 1);
       }
