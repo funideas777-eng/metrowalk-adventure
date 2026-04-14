@@ -1,16 +1,62 @@
 const ScoreboardEngine = {
   pollTimer: null, currentTab: 'team', currentGame: 'pacman', rankings: [], maxPoints: 0,
+  lastManualRefresh: 0,   // 手動刷新冷卻
+  refreshCooldown: 60000, // 1 分鐘冷卻
 
-  init() { this.startPolling(); this.fetchTeamRankings(); },
+  init() {
+    this.refreshCooldown = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.scoreboardCooldown) || 60000;
+    this.startPolling();
+    this.fetchTeamRankings();
+    this.updateRefreshButton();
+  },
   startPolling() {
-    var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.scoreboard) || { base: 15000, jitter: 5000 };
-    this.pollTimer = setInterval(() => { if (!document.hidden) { if (this.currentTab === 'team') this.fetchTeamRankings(); else this.fetchGameScores(this.currentGame); } }, pi.base + Math.random() * pi.jitter);
+    // 5 分鐘自動刷新（原 15-20 秒）
+    var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.scoreboard) || { base: 300000, jitter: 30000 };
+    this.pollTimer = setInterval(() => {
+      if (!document.hidden) {
+        if (this.currentTab === 'team') this.fetchTeamRankings();
+        else this.fetchGameScores(this.currentGame);
+        this.updateRefreshButton();
+      }
+    }, pi.base + Math.random() * pi.jitter);
   },
   stopPolling() { if (this.pollTimer) clearInterval(this.pollTimer); },
 
+  // 手動刷新（1 分鐘冷卻）
+  manualRefresh() {
+    var now = Date.now();
+    var remaining = this.refreshCooldown - (now - this.lastManualRefresh);
+    if (remaining > 0) {
+      var secs = Math.ceil(remaining / 1000);
+      alert('冷卻中，請等 ' + secs + ' 秒後再刷新');
+      return;
+    }
+    this.lastManualRefresh = now;
+    if (this.currentTab === 'team') this.fetchTeamRankings();
+    else this.fetchGameScores(this.currentGame);
+    this.updateRefreshButton();
+    if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
+  },
+
+  updateRefreshButton() {
+    var btn = document.getElementById('refreshBtn');
+    if (!btn) return;
+    var now = Date.now();
+    var remaining = this.refreshCooldown - (now - this.lastManualRefresh);
+    if (remaining > 0) {
+      btn.disabled = true;
+      btn.textContent = '⏳ ' + Math.ceil(remaining / 1000) + 's';
+      var self = this;
+      setTimeout(function() { self.updateRefreshButton(); }, 1000);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '🔄 刷新排行榜';
+    }
+  },
+
   async fetchTeamRankings() {
     try {
-      const data = await API.get('getTeamRankings', { action: 'getTeamRankings' }, CONFIG.CACHE_TTL.rankings || 15000);
+      const data = await API.get('getTeamRankings', { action: 'getTeamRankings' }, CONFIG.CACHE_TTL.rankings || 60000);
       if (data && data.rankings) { this.rankings = data.rankings; this.maxPoints = Math.max(...data.rankings.map(r => r.totalPoints), 1); this.renderTeamRankings(data.rankings); }
     } catch {}
   },
@@ -29,7 +75,7 @@ const ScoreboardEngine = {
 
   async fetchGameScores(gameId) {
     try {
-      const data = await API.get('getGameScores', { action: 'getGameScores', gameId, limit: 30 }, CONFIG.CACHE_TTL.rankings || 15000);
+      const data = await API.get('getGameScores', { action: 'getGameScores', gameId, limit: 30 }, CONFIG.CACHE_TTL.rankings || 60000);
       if (data && data.scores) this.renderGameScores(data.scores, gameId);
     } catch {}
   },

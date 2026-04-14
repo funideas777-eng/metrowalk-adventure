@@ -1,7 +1,11 @@
 const Chat = {
   channel: 'team', messages: { team: [], world: [] }, lastTimestamp: { team: null, world: null },
   pollTimer: null, isOpen: false, danmakuQueue: [], danmakuActive: false,
-  init() { this.startPolling(); },
+  init() {
+    // 首次連線隨機延遲 2-12 秒，錯開 600 人同時請求
+    var self = this;
+    setTimeout(function() { self.startPolling(); }, 2000 + Math.random() * 10000);
+  },
   startPolling() {
     var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.chat) || { base: 15000, jitter: 5000 };
     const poll = () => { if (!document.hidden) { this.fetchMessages('team'); this.fetchMessages('world'); } };
@@ -11,10 +15,17 @@ const Chat = {
   async fetchMessages(channel) {
     const session = Auth.getSession(); if (!session) return;
     try {
-      const data = await API.get('getChat_' + channel, { action: 'getChat', channel, teamId: session.teamId, since: this.lastTimestamp[channel] || '' }, 0);
+      // 只讀取最近 3 分鐘的訊息（降低 GAS 負載 + 傳輸量）
+      var sinceTime = this.lastTimestamp[channel] || '';
+      var chatWindow = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.chatWindow) || 180000; // 3 分鐘
+      if (!sinceTime) { sinceTime = new Date(Date.now() - chatWindow).toISOString(); }
+      const data = await API.get('getChat_' + channel, { action: 'getChat', channel, teamId: session.teamId, since: sinceTime }, CONFIG.CACHE_TTL.chat || 5000);
       if (data && data.messages && data.messages.length > 0) {
         data.messages.forEach(msg => { if (!this.messages[channel].some(m => m.msgId === msg.msgId)) { this.messages[channel].push(msg); if (channel === 'world') this.danmakuQueue.push(msg); } });
-        if (this.messages[channel].length > 200) this.messages[channel] = this.messages[channel].slice(-200);
+        // 清除超過 3 分鐘的舊訊息
+        var cutoff = Date.now() - chatWindow;
+        this.messages[channel] = this.messages[channel].filter(function(m) { return new Date(m.timestamp).getTime() > cutoff; });
+        if (this.messages[channel].length > 100) this.messages[channel] = this.messages[channel].slice(-100);
         this.lastTimestamp[channel] = data.messages[data.messages.length - 1].timestamp;
         if (this.isOpen && this.channel === channel) this.renderMessages();
       }

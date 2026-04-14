@@ -25,11 +25,12 @@
 <body>
 <div class="top-bar"><button class="top-bar-back" onclick="window.location.href='map.html'">←</button><div class="top-bar-title">🏆 即時戰報</div><div style="width:40px;"></div></div>
 <div class="page-container">
-  <div class="score-header"><h1>🏆 即時積分戰報</h1><p>每 5 秒自動更新 · 前5名加分</p></div>
+  <div class="score-header"><h1>🏆 即時積分戰報</h1><p>每 5 分鐘自動更新 · 前5名加分</p></div>
+  <div style="text-align:center;margin-bottom:12px;"><button class="btn btn-secondary btn-sm" id="refreshBtn" onclick="ScoreboardEngine.manualRefresh()">🔄 刷新排行榜</button></div>
   <div class="score-tabs"><button class="score-tab active" data-tab="team" onclick="ScoreboardEngine.switchTab('team')">🏆 團隊排行</button><button class="score-tab" data-tab="game" onclick="ScoreboardEngine.switchTab('game')">🎮 遊戲排行</button></div>
   <div id="gameSelector"><div class="game-chips" id="gameChips"></div></div>
   <div id="rankingList"></div>
-  <div style="text-align:center;font-size:11px;color:rgba(0,188,212,0.4);padding:8px;">🔄 自動更新中</div>
+  <div style="text-align:center;font-size:11px;color:rgba(0,188,212,0.4);padding:8px;">⏱ 每 5 分鐘自動更新 · 手動刷新冷卻 1 分鐘</div>
 </div>
 <script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/scoreboard-engine.js"></script>
 <script>

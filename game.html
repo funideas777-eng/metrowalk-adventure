@@ -248,6 +248,31 @@
     };
   });
 
+  // === 防作弊：遊戲開始時向後端要 Token ===
+  var _gameToken = null, _gameStartTime = null;
+  async function requestGameToken() {
+    try {
+      var session = Auth.getSession();
+      var data = await API.get('startGame', { action: 'startGame', playerId: session.playerId, gameId: gameId }, 0);
+      if (data && data.gameToken) { _gameToken = data.gameToken; _gameStartTime = data.startTime; }
+    } catch(e) { console.warn('Token request failed', e); }
+  }
+
+  // === 防作弊：分數簽章 ===
+  async function signScore(score) {
+    if (!_gameStartTime) return { signature: null, startTime: null };
+    var raw = Auth.getSession().playerId + '|' + gameId + '|' + score + '|' + _gameStartTime + '|' + 'mw_s3cure_2026';
+    // Web Crypto SHA-256
+    try {
+      var enc = new TextEncoder();
+      var hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(raw));
+      var hex = Array.from(new Uint8Array(hashBuf)).map(function(b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      return { signature: hex.substring(0, 16), startTime: _gameStartTime };
+    } catch(e) {
+      return { signature: null, startTime: _gameStartTime };
+    }
+  }
+
   // === GameState ===
   const GameState = {
     running: false, paused: false,
@@ -372,6 +397,8 @@
     GameState.timeLeft = gameConfig.duration || 60;
     GameState.updateHUD();
     document.getElementById('roundDisplay').textContent = 'R1';
+    // 防作弊：向後端請求遊戲 Token（記錄開始時間）
+    requestGameToken();
     AudioEngine.gameStart();
     if (navigator.vibrate) navigator.vibrate(200);
 
@@ -514,14 +541,25 @@
     btn.textContent = '⏳ 提交中...';
     var session = Auth.getSession();
     try {
-      await API.post('WRITE', {
+      // 防作弊：附帶簽章
+      var sig = await signScore(GameState.score);
+      var result = await API.post('WRITE', {
         action: 'submitScore',
         playerId: session.playerId,
         playerName: session.name,
         teamId: session.teamId,
         gameId: gameId,
-        score: GameState.score
+        score: GameState.score,
+        signature: sig.signature,
+        startTime: sig.startTime
       });
+      // 檢查是否被後端攔截
+      if (result && (result.blocked || result.rateLimited)) {
+        btn.className = 'btn btn-primary btn-lg btn-submit';
+        btn.textContent = result.rateLimited ? '⏳ 請稍後再試' : '⚠️ 提交異常';
+        btn.disabled = true;
+        return;
+      }
       btn.className = 'btn btn-primary btn-lg btn-submit submitted';
       btn.textContent = '✅ 已提交成功！';
       // Mark game as completed in localStorage

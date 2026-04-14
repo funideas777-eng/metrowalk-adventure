@@ -48,8 +48,10 @@ const CONFIG = {
   // === 600人優化輪詢頻率 ===
   POLL_INTERVAL: {
     chat: { base: 15000, jitter: 5000 },        // 聊天 15-20秒（原 3-5秒）
+    chatWindow: 180000,                          // 只讀取最近 3 分鐘內的訊息
     broadcast: { base: 20000, jitter: 10000 },   // 廣播 20-30秒（原 5-8秒）
-    scoreboard: { base: 15000, jitter: 5000 },   // 排行榜 15-20秒（原 5-8秒）
+    scoreboard: { base: 300000, jitter: 30000 },  // 排行榜 5-5.5 分鐘自動刷新
+    scoreboardCooldown: 60000,                    // 手動刷新冷卻 1 分鐘
     emergency: { base: 45000, jitter: 15000 },   // 緊急任務 45-60秒（原 30秒）
     adminDashboard: { base: 8000, jitter: 2000 }, // 管理後台 8-10秒
     photoStatus: { base: 8000, jitter: 2000 }     // 照片審核 8-10秒
@@ -57,8 +59,8 @@ const CONFIG = {
 
   CACHE_TTL: {
     teams: 120000,      // 隊伍列表 2 分鐘（原 1 分鐘）
-    scores: 15000,      // 分數 15 秒（原 3 秒）
-    rankings: 15000,    // 排行榜 15 秒（原 3 秒）
+    scores: 60000,      // 分數 1 分鐘
+    rankings: 60000,    // 排行榜 1 分鐘（配合手動刷新冷卻）
     broadcasts: 10000,  // 廣播 10 秒（原 0）
     config: 300000,     // 系統設定 5 分鐘
     chat: 5000          // 聊天 5 秒（原 0）

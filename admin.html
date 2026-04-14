@@ -41,8 +41,24 @@
 </div>
 <script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script>
 <script>
-  API.init(); const ADMIN_PWD = '11201120';
-  function adminAuth() { if (document.getElementById('adminPwd').value === ADMIN_PWD) { document.getElementById('adminLogin').style.display = 'none'; document.getElementById('adminPanel').classList.add('show'); initAdmin(); } else alert('密碼錯誤'); }
+  API.init();
+  var _adminToken = null;
+  async function adminAuth() {
+    var pwd = document.getElementById('adminPwd').value;
+    if (!pwd) { alert('請輸入密碼'); return; }
+    try {
+      var result = await API.post('ADMIN', { action: 'adminLogin', password: pwd });
+      if (result && result.token) {
+        _adminToken = result.token;
+        sessionStorage.setItem('admin_token', _adminToken);
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminPanel').classList.add('show');
+        initAdmin();
+      } else { alert('密碼錯誤'); }
+    } catch(e) { alert('登入失敗：' + (e.message || '網路錯誤')); }
+  }
+  // 頁面重整時恢復 token
+  (function() { var t = sessionStorage.getItem('admin_token'); if (t) { _adminToken = t; } })();
   function initAdmin() {
     const sel = document.getElementById('pointsTeam');
     CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.emoji} ${t.name}`; sel.appendChild(o); });
@@ -51,12 +67,12 @@
     setInterval(() => { loadPhotos(); loadDashboard(); }, adPI.base + Math.random() * adPI.jitter);
   }
   async function loadDashboard() {
-    try { const d = await API.get('getDashboard', { action:'getDashboard', password:ADMIN_PWD }, 0);
+    try { const d = await API.get('getDashboard', { action:'getDashboard', token:_adminToken }, 0);
       if (d) { document.getElementById('statPlayers').textContent = d.totalPlayers||0; document.getElementById('statPlays').textContent = d.totalPlays||0; document.getElementById('statPending').textContent = d.pendingPhotos||0; document.getElementById('statTime').textContent = new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}); }
     } catch {}
   }
   async function loadPhotos() {
-    try { const d = await API.get('getPendingPhotos', { action:'getPendingPhotos', password:ADMIN_PWD }, 0);
+    try { const d = await API.get('getPendingPhotos', { action:'getPendingPhotos', token:_adminToken }, 0);
       if (!d || !d.photos) return; const c = document.getElementById('photoList');
       if (!d.photos.length) { c.innerHTML = '<div style="text-align:center;color:#999;padding:20px;">沒有照片</div>'; return; }
       const sorted = d.photos.sort((a,b) => a.status==='pending'&&b.status!=='pending'?-1:1);
@@ -68,14 +84,14 @@
     if (!confirm(approved?'確定通過？將加 300 分':'確定不通過？')) return;
     const a = document.getElementById('a-'+id), r = document.getElementById('r-'+id);
     if (a) { a.disabled = true; a.textContent = '處理中...'; } if (r) r.disabled = true;
-    try { await API.post('ADMIN', { action:'verifyPhoto', password:ADMIN_PWD, submissionId:id, approved }); alert(approved?'已通過！':'已拒絕'); loadPhotos(); } catch { alert('失敗'); if (a) { a.disabled=false; a.textContent='✅ 通過'; } if (r) r.disabled=false; }
+    try { await API.post('ADMIN', { action:'verifyPhoto', token:_adminToken, submissionId:id, approved }); alert(approved?'已通過！':'已拒絕'); loadPhotos(); } catch { alert('失敗'); if (a) { a.disabled=false; a.textContent='✅ 通過'; } if (r) r.disabled=false; }
   }
-  async function sendBroadcast() { const c = document.getElementById('broadcastContent').value.trim(); if (!c) return alert('請輸入內容'); try { await API.post('ADMIN', { action:'broadcast', password:ADMIN_PWD, type:'text', content:c }); alert('已發送！'); document.getElementById('broadcastContent').value=''; } catch { alert('失敗'); } }
+  async function sendBroadcast() { const c = document.getElementById('broadcastContent').value.trim(); if (!c) return alert('請輸入內容'); try { await API.post('ADMIN', { action:'broadcast', token:_adminToken, type:'text', content:c }); alert('已發送！'); document.getElementById('broadcastContent').value=''; } catch { alert('失敗'); } }
   async function addPoints() {
     const t = document.getElementById('pointsTeam').value, p = parseInt(document.getElementById('pointsAmount').value), r = document.getElementById('pointsReason').value.trim();
     if (!t||!p) return alert('請填寫完整');
     const btn = document.getElementById('addPointsBtn'); btn.disabled=true; btn.textContent='提交中...';
-    try { await API.post('ADMIN', { action:'addManualPoints', password:ADMIN_PWD, teamId:parseInt(t), points:p, detail:r }); alert(`已加 ${p} 分！`); document.getElementById('pointsAmount').value=''; document.getElementById('pointsReason').value=''; btn.textContent='✅ 已送出'; setTimeout(()=>{ btn.disabled=false; btn.textContent='確認加分'; },3000); } catch { alert('失敗'); btn.disabled=false; btn.textContent='確認加分'; }
+    try { await API.post('ADMIN', { action:'addManualPoints', token:_adminToken, teamId:parseInt(t), points:p, detail:r }); alert(`已加 ${p} 分！`); document.getElementById('pointsAmount').value=''; document.getElementById('pointsReason').value=''; btn.textContent='✅ 已送出'; setTimeout(()=>{ btn.disabled=false; btn.textContent='確認加分'; },3000); } catch { alert('失敗'); btn.disabled=false; btn.textContent='確認加分'; }
   }
 
   // === Emergency Task Management ===
@@ -106,7 +122,7 @@
     task.active = true;
     task._triggered = true;
     // Send broadcast notification to all players
-    API.post('ADMIN', { action:'broadcast', password:ADMIN_PWD, type:'emergency', content:`🚨 緊急任務【${task.name}】已開啟！${task.description}（完成可得 ${task.points} 分）`, title:task.name, id:task.id, points:task.points }).then(() => {
+    API.post('ADMIN', { action:'broadcast', token:_adminToken, type:'emergency', content:`🚨 緊急任務【${task.name}】已開啟！${task.description}（完成可得 ${task.points} 分）`, title:task.name, id:task.id, points:task.points }).then(() => {
       alert('已觸發並廣播：' + task.name);
       renderEmergencyList();
     }).catch(() => alert('廣播失敗'));
@@ -124,7 +140,7 @@
     if (!confirm('⚠️ 確定要重置所有資料嗎？\n\n將清除：\n• 所有遊戲分數紀錄\n• 所有聊天訊息\n• 所有玩家登入資料\n• 所有照片審核紀錄\n\n此操作無法復原！')) return;
     if (!confirm('再次確認：真的要清除所有資料嗎？')) return;
     try {
-      await API.post('ADMIN', { action:'resetAll', password:ADMIN_PWD });
+      await API.post('ADMIN', { action:'resetAll', token:_adminToken });
       alert('✅ 所有資料已重置！遊戲可以重新開始。');
       loadDashboard(); loadPhotos();
     } catch(e) {

@@ -82,10 +82,10 @@ const API = {
   // === 路由：根據 endpoint 決定用哪個 URL ===
   getBaseUrl(endpoint) {
     // 寫入類操作 → 專用寫入端點
-    var writeActions = ['register','unlockGame','submitScore','sendChat','updateLocation','submitPhotoTask'];
+    var writeActions = ['register','unlockGame','submitScore','sendChat','updateLocation','submitPhotoTask','answerQuiz'];
     if (writeActions.indexOf(endpoint) !== -1) return CONFIG.API_URL.WRITE;
     // 管理類操作
-    var adminActions = ['addManualPoints','broadcast','verifyPhoto','recalcTeamPoints','resetAll','getDashboard','getPendingPhotos'];
+    var adminActions = ['addManualPoints','broadcast','verifyPhoto','recalcTeamPoints','resetAll','getDashboard','getPendingPhotos','adminLogin'];
     if (adminActions.indexOf(endpoint) !== -1) return CONFIG.API_URL.ADMIN;
     // 照片上傳
     if (endpoint === 'uploadPhoto') return CONFIG.API_URL.PHOTO;

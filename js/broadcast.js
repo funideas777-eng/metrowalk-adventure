@@ -3,7 +3,9 @@ const Broadcast = {
   init() {
     const saved = localStorage.getItem('metrowalk_broadcasts');
     if (saved) { try { const p = JSON.parse(saved); this.messages = p.messages || []; this.lastTimestamp = p.lastTimestamp || null; } catch {} }
-    this.startPolling();
+    // 首次連線隨機延遲 0-8 秒，避免 600 人同時湧入
+    var self = this;
+    setTimeout(function() { self.startPolling(); }, Math.random() * 8000);
   },
   startPolling() {
     var pi = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.broadcast) || { base: 20000, jitter: 10000 };
