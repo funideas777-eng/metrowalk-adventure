@@ -81,6 +81,11 @@ const API = {
 
   // === 路由：根據 endpoint 決定用哪個 URL ===
   getBaseUrl(endpoint) {
+    // Cloudflare Workers 模式：所有請求走同一個 URL
+    if (CONFIG.BACKEND === 'cf' && CONFIG.CF_URL) {
+      return CONFIG.CF_URL;
+    }
+    // === GAS 模式：分流路由 ===
     // 寫入類操作 → 專用寫入端點
     var writeActions = ['register','unlockGame','submitScore','sendChat','updateLocation','submitPhotoTask','answerQuiz'];
     if (writeActions.indexOf(endpoint) !== -1) return CONFIG.API_URL.WRITE;

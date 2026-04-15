@@ -1,0 +1,26 @@
+name = "metrowalk-api"
+main = "worker.js"
+compatibility_date = "2024-12-01"
+
+# ====== D1 Database ======
+[[d1_databases]]
+binding = "DB"
+database_name = "metrowalk-db"
+database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create metrowalk-db 後填入
+
+# ====== R2 Storage (照片) ======
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "metrowalk-photos"
+# wrangler r2 bucket create metrowalk-photos
+
+# ====== KV (快取 + Rate Limit) ======
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"  # wrangler kv namespace create metrowalk-cache 後填入
+
+# ====== 環境變數 ======
+[vars]
+ADMIN_PASSWORD = "11201120"
+SIGN_SECRET = "mw_s3cure_2026"
+CORS_ORIGIN = "https://funideas777-eng.github.io"
