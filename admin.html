@@ -32,6 +32,32 @@
   <div class="top-bar"><button class="top-bar-back" onclick="window.location.href='map.html'">←</button><div class="top-bar-title">🔧 管理後台</div><div style="width:40px;"></div></div>
   <div class="page-container">
     <div class="admin-section"><h3>📊 即時數據</h3><div class="stat-grid"><div class="stat-card"><div class="num" id="statPlayers">-</div><div class="label">已登入</div></div><div class="stat-card"><div class="num" id="statPlays">-</div><div class="label">遊戲次數</div></div><div class="stat-card"><div class="num" id="statPending">-</div><div class="label">待審照片</div></div><div class="stat-card"><div class="num" id="statTime">-</div><div class="label">目前時間</div></div></div><button class="btn btn-outline btn-sm" onclick="loadDashboard()">🔄 刷新</button></div>
+
+    <div class="admin-section"><h3>🎯 活動報到狀態</h3>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="num" id="statOnline" style="color:#0f0">-</div><div class="label">即時在線</div></div>
+        <div class="stat-card"><div class="num" id="statRegistered">-</div><div class="label">已報到</div></div>
+        <div class="stat-card"><div class="num" id="statOnlinePct">-%</div><div class="label">上線比例</div></div>
+        <div class="stat-card"><div class="num" id="statRegPct">-%</div><div class="label">報到比例</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <input type="number" class="input" id="eventTotalInput" placeholder="本日預計總人數" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="saveEventTotal()">💾 儲存</button>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="loadEventStatus()">🔄 刷新</button>
+      <div id="teamCheckin" style="margin-top:12px;max-height:320px;overflow-y:auto;font-size:12px;"></div>
+    </div>
+
+    <div class="admin-section"><h3>🚨 緊急後端切換</h3>
+      <p style="font-size:12px;color:var(--text-light);margin-bottom:10px;">目前：<b id="currentBackend">-</b></p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="switchBackendTo('cf')">⚡ Cloudflare</button>
+        <button class="btn btn-outline btn-sm" onclick="switchBackendTo('gas')">📊 GAS</button>
+        <button class="btn btn-outline btn-sm" onclick="clearBackendOverride()">↩️ 恢復預設</button>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:8px;">可分享 URL 給玩家：<br><code id="backendShareUrl" style="word-break:break-all;color:#0cf;"></code></div>
+    </div>
+
     <div class="admin-section"><h3>📢 發送廣播</h3><textarea class="input" id="broadcastContent" rows="3" placeholder="輸入廣播訊息..." style="resize:none;"></textarea><div style="margin-top:12px;"><button class="btn btn-primary" onclick="sendBroadcast()">📢 發送</button></div></div>
     <div class="admin-section"><h3>📸 照片審核</h3><button class="btn btn-outline btn-sm" onclick="loadPhotos()">🔄 刷新照片</button><div id="photoList" style="margin-top:12px;"></div></div>
     <div class="admin-section"><h3>🚨 緊急任務管理</h3><div id="emergencyList"></div><button class="btn btn-primary btn-sm" onclick="triggerEmergency()" style="margin-top:12px;">🚀 手動觸發下一組</button></div>
@@ -63,8 +89,63 @@
     const sel = document.getElementById('pointsTeam');
     CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.emoji} ${t.name}`; sel.appendChild(o); });
     loadDashboard(); loadPhotos(); renderEmergencyList();
+    loadEventStatus(); updateBackendDisplay();
     var adPI = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.adminDashboard) || { base: 8000, jitter: 2000 };
     setInterval(() => { loadPhotos(); loadDashboard(); }, adPI.base + Math.random() * adPI.jitter);
+    setInterval(loadEventStatus, 15000);
+  }
+
+  // === 活動報到狀態 ===
+  async function loadEventStatus() {
+    try {
+      const d = await API.get('getEventStatus', { action:'getEventStatus' }, 0);
+      if (!d || d.error) return;
+      document.getElementById('statOnline').textContent = d.totalOnline || 0;
+      document.getElementById('statRegistered').textContent = d.totalRegistered || 0;
+      document.getElementById('statOnlinePct').textContent = (d.onlinePercent || 0) + '%';
+      document.getElementById('statRegPct').textContent = (d.registeredPercent || 0) + '%';
+      if (d.eventTotal && !document.getElementById('eventTotalInput').value) {
+        document.getElementById('eventTotalInput').placeholder = '本日預計總人數 (目前:' + d.eventTotal + ')';
+      }
+      // 各隊報到狀況
+      var html = '<table style="width:100%;border-collapse:collapse;"><tr style="background:rgba(0,188,212,0.08);"><th style="padding:6px;text-align:left;">隊伍</th><th style="padding:6px;">報到</th><th style="padding:6px;">在線</th></tr>';
+      (d.teams || []).forEach(function(t) {
+        var checkin = t.registered > 0 ? '✅' : '⬜';
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:6px;">' + checkin + ' ' + t.teamEmoji + ' ' + t.teamName + '</td><td style="padding:6px;text-align:center;">' + t.registered + '</td><td style="padding:6px;text-align:center;color:' + (t.online>0?'#0f0':'#666') + ';">' + t.online + '</td></tr>';
+      });
+      html += '</table>';
+      document.getElementById('teamCheckin').innerHTML = html;
+    } catch(e) { console.warn('loadEventStatus failed', e); }
+  }
+  async function saveEventTotal() {
+    var v = parseInt(document.getElementById('eventTotalInput').value);
+    if (!v || v < 0) { alert('請輸入有效人數'); return; }
+    try {
+      var res = await API.post('ADMIN', { action: 'updateEventTotal', token: _adminToken, total: v });
+      if (res && res.success) { alert('已更新為 ' + v + ' 人'); loadEventStatus(); }
+      else alert('失敗：' + (res.error || ''));
+    } catch(e) { alert('失敗：' + e.message); }
+  }
+
+  // === 緊急後端切換 ===
+  function updateBackendDisplay() {
+    var cur = API.getBackend ? API.getBackend() : CONFIG.BACKEND;
+    document.getElementById('currentBackend').textContent = cur.toUpperCase();
+    var base = location.origin + location.pathname.replace(/admin\.html$/, '');
+    document.getElementById('backendShareUrl').textContent = base + '?backend=' + cur;
+  }
+  function switchBackendTo(target) {
+    if (API.switchBackend && API.switchBackend(target)) {
+      alert('已切換至 ' + target.toUpperCase() + '\n重新整理頁面生效');
+      updateBackendDisplay();
+    }
+  }
+  function clearBackendOverride() {
+    if (API.clearBackendOverride) {
+      API.clearBackendOverride();
+      alert('已清除覆寫，恢復預設後端');
+      updateBackendDisplay();
+    }
   }
   async function loadDashboard() {
     try { const d = await API.get('getDashboard', { action:'getDashboard', token:_adminToken }, 0);

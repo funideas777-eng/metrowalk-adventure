@@ -4,6 +4,10 @@ const API = {
   _nodeIndex: -1,        // 此玩家綁定的節點 (-1=未初始化)
   _nodeHealth: [],       // 各節點健康狀態 [true, true, ...]
   _lastHealthCheck: 0,
+  // === 後端自動故障轉移 ===
+  _cfFailCount: 0,       // CF 連續失敗次數
+  _cfFailThreshold: 3,   // 連續 3 次失敗即切 GAS
+  _backendOverride: null,// localStorage 強制指定
 
   init() {
     const saved = localStorage.getItem('metrowalk_api_queue');
@@ -13,6 +17,60 @@ const API = {
     document.addEventListener('visibilitychange', () => { if (!document.hidden) this.processQueue(); });
     // 初始化節點分配
     this._initLoadBalance();
+    // === URL query 覆寫後端（?backend=gas|cf）===
+    var urlParams = new URLSearchParams(location.search);
+    var urlBackend = urlParams.get('backend');
+    if (urlBackend === 'gas' || urlBackend === 'cf') {
+      localStorage.setItem('metrowalk_backend_override', urlBackend);
+    }
+    // 從 localStorage 讀取強制後端
+    this._backendOverride = localStorage.getItem('metrowalk_backend_override');
+    if (this._backendOverride) {
+      CONFIG.BACKEND = this._backendOverride;
+      console.warn('[API] 後端強制覆寫為:', this._backendOverride);
+    }
+  },
+
+  // 取得當前有效後端（含 override）
+  getBackend() {
+    return this._backendOverride || CONFIG.BACKEND;
+  },
+
+  // 手動切換後端（Admin 緊急使用）
+  switchBackend(target) {
+    if (target !== 'gas' && target !== 'cf') return false;
+    localStorage.setItem('metrowalk_backend_override', target);
+    this._backendOverride = target;
+    CONFIG.BACKEND = target;
+    this._cfFailCount = 0;
+    return true;
+  },
+
+  // 清除後端覆寫（回到預設）
+  clearBackendOverride() {
+    localStorage.removeItem('metrowalk_backend_override');
+    this._backendOverride = null;
+  },
+
+  // 自動故障轉移：CF 失敗 N 次後切 GAS
+  _recordCfFailure() {
+    if (this.getBackend() !== 'cf') return;
+    this._cfFailCount++;
+    if (this._cfFailCount >= this._cfFailThreshold) {
+      console.warn('[API] CF 連續失敗 ' + this._cfFailCount + ' 次，自動切換至 GAS');
+      this.switchBackend('gas');
+      // 顯示使用者通知
+      if (typeof document !== 'undefined') {
+        var bar = document.createElement('div');
+        bar.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#f90;color:#fff;padding:8px;text-align:center;z-index:99999;font-size:13px;';
+        bar.textContent = '⚠️ 主服務異常，已自動切換至備援伺服器';
+        document.body && document.body.appendChild(bar);
+        setTimeout(function() { bar.remove(); }, 5000);
+      }
+    }
+  },
+  _recordCfSuccess() {
+    this._cfFailCount = 0;
   },
 
   // === 負載平衡初始化 ===
@@ -82,7 +140,7 @@ const API = {
   // === 路由：根據 endpoint 決定用哪個 URL ===
   getBaseUrl(endpoint) {
     // Cloudflare Workers 模式：所有請求走同一個 URL
-    if (CONFIG.BACKEND === 'cf' && CONFIG.CF_URL) {
+    if (this.getBackend() === 'cf' && CONFIG.CF_URL) {
       return CONFIG.CF_URL;
     }
     // === GAS 模式：分流路由 ===
@@ -132,6 +190,7 @@ const API = {
         var res = await fetch(url.toString(), fetchOpts);
         if (timer) clearTimeout(timer);
         var data = await res.json();
+        this._recordCfSuccess();
         // 成功 → 快取
         if (cacheTTL > 0) {
           var entry = { data: data, time: Date.now() };
@@ -142,6 +201,7 @@ const API = {
       } catch(e) {
         lastError = e;
         if (timer) clearTimeout(timer);
+        this._recordCfFailure();
         // 讀取端點故障 → 切換節點重試
         var isReadEndpoint = !['WRITE','PHOTO','ADMIN'].includes(endpoint) &&
           ['register','unlockGame','submitScore','sendChat','updateLocation','submitPhotoTask',
@@ -167,8 +227,11 @@ const API = {
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(body)
       });
-      return await res.json();
+      var data = await res.json();
+      this._recordCfSuccess();
+      return data;
     } catch(e) {
+      this._recordCfFailure();
       this.queue.push({ endpoint: endpoint, body: body, retries: 0 });
       this.saveQueue();
       throw e;

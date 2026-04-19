@@ -117,12 +117,14 @@
 <div id="notification-bar" class="notification-bar"></div>
 <div id="message-panel" class="message-panel"></div>
 
+<div id="teamOnlineBar" style="padding:8px 16px;font-size:13px;color:#fff;background:rgba(0,188,212,0.12);border-bottom:1px solid rgba(0,188,212,0.2);">🟢 隊伍在線 <b>-</b></div>
 <div class="content-area" id="contentArea" style="padding-top:4px;"></div>
 
 <!-- 聊天 -->
 <button class="chat-fab" onclick="Chat.open()">💬</button>
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header"><button class="chat-ch-btn active" data-channel="team" onclick="Chat.switchChannel('team')">👥 隊伍</button><button class="chat-ch-btn" data-channel="world" onclick="Chat.switchChannel('world')">🌍 世界</button><div style="flex:1"></div><button onclick="Chat.close()" style="background:none;border:none;font-size:18px;cursor:pointer;">✕</button></div>
+  <div id="chat-online-count" style="padding:6px 16px;font-size:12px;color:#aff;background:rgba(0,188,212,0.08);border-bottom:1px solid rgba(0,188,212,0.15);">🟢 隊伍在線 <b>-</b></div>
   <div class="chat-messages" id="chat-messages"></div>
   <div class="chat-input-bar"><input id="chat-input" placeholder="輸入訊息..." maxlength="200"><button onclick="sendChatMsg()">➤</button></div>
 </div>
@@ -134,11 +136,11 @@
   <div class="tab-item" onclick="switchTab('rank')"><div class="tab-item-icon">🏆</div><div class="tab-item-label">排行榜</div></div>
 </div>
 
-<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/gps.js"></script><script src="js/broadcast.js"></script><script src="js/chat.js"></script>
+<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/gps.js"></script><script src="js/broadcast.js"></script><script src="js/chat.js"></script><script src="js/presence.js"></script>
 <script src="js/dialogue.js"></script><script src="js/dialogue-scripts.js"></script>
 <script>
   if (!Auth.requireLogin()) throw new Error('未登入');
-  AudioEngine.init(); API.init(); Broadcast.init(); Chat.init();
+  AudioEngine.init(); API.init(); Broadcast.init(); Chat.init(); Presence.start();
   var session = Auth.getSession();
   var currentTab = 'story';
   var currentFloor = 'GBF';
@@ -262,7 +264,23 @@
     if (currentTab === 'story') renderStory(area);
     else if (currentTab === 'adventure') renderAdventure(area);
     else if (currentTab === 'games') renderAllGames(area);
+    // 每次渲染都更新隊伍在線人數
+    renderTeamOnline();
   }
+
+  async function renderTeamOnline() {
+    if (typeof Presence === 'undefined') return;
+    var session = Auth.getSession(); if (!session) return;
+    try {
+      var data = await Presence.getTeamOnline(session.teamId);
+      var el = document.getElementById('teamOnlineBar');
+      if (!el) return;
+      var names = (data.members || []).map(function(m){return m.name;}).filter(Boolean).slice(0, 6).join('、');
+      el.innerHTML = '🟢 <b>' + (session.teamEmoji || '') + ' ' + (session.teamName || '') + '</b> 線上 <b style="color:#0f0">' + (data.count || 0) + '</b> 人' + (names ? '<div style="font-size:11px;color:#aaa;margin-top:2px;">' + names + '</div>' : '');
+    } catch(e) {}
+  }
+  // 定期刷新在線（30s）
+  setInterval(renderTeamOnline, 30000);
 
   // ========== 劇情任務 ==========
   function renderStory(area) {
@@ -522,6 +540,6 @@
   document.getElementById('chat-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChatMsg(); });
   function showSettings() { if (confirm('[確定] 登出並重整\n[取消] 返回')) { Auth.logout(); window.location.href = 'index.html'; } }
 </script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<script src="js/sw-manager.js"></script>
 </body>
 </html>

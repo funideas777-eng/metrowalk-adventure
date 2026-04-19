@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metrowalk-v9';
+const CACHE_NAME = 'metrowalk-v11';
 const STATIC_ASSETS = [
   '/metrowalk-adventure/index.html',
   '/metrowalk-adventure/map.html',
@@ -17,7 +17,9 @@ const STATIC_ASSETS = [
   '/metrowalk-adventure/js/chat.js',
   '/metrowalk-adventure/js/scoreboard-engine.js',
   '/metrowalk-adventure/js/dialogue.js',
-  '/metrowalk-adventure/js/dialogue-scripts.js'
+  '/metrowalk-adventure/js/dialogue-scripts.js',
+  '/metrowalk-adventure/js/sw-manager.js',
+  '/metrowalk-adventure/js/presence.js'
 ];
 
 self.addEventListener('install', e => {
@@ -29,11 +31,22 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    (async () => {
+      // 清除舊快取
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+      // 強制接管所有分頁
+      await self.clients.claim();
+      // 通知所有分頁重新載入（取得新版本）
+      const clients = await self.clients.matchAll({ type: 'window' });
+      clients.forEach(c => c.postMessage({ type: 'SW_UPDATED', version: CACHE_NAME }));
+    })()
   );
-  self.clients.claim();
+});
+
+// 支援從前端觸發 skipWaiting
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {

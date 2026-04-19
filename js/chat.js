@@ -42,7 +42,19 @@ const Chat = {
       if (this.isOpen) this.renderMessages();
     } catch {}
   },
-  open() { this.isOpen = true; const p = document.getElementById('chat-panel'); if (p) { p.classList.add('open'); this.renderMessages(); } },
+  open() { this.isOpen = true; const p = document.getElementById('chat-panel'); if (p) { p.classList.add('open'); this.renderMessages(); this.updateOnlineCount(); } },
+  async updateOnlineCount() {
+    if (typeof Presence === 'undefined') return;
+    const session = Auth.getSession(); if (!session) return;
+    try {
+      const data = await Presence.getTeamOnline(session.teamId);
+      const el = document.getElementById('chat-online-count');
+      if (el && data) {
+        const names = (data.members || []).map(m => m.name).filter(Boolean).slice(0, 8).join('、');
+        el.innerHTML = `🟢 隊伍在線 <b>${data.count || 0}</b> 人` + (names ? ` <span style="color:#999;font-size:11px">(${names})</span>` : '');
+      }
+    } catch(e) {}
+  },
   close() { this.isOpen = false; const p = document.getElementById('chat-panel'); if (p) p.classList.remove('open'); },
   switchChannel(ch) { this.channel = ch; document.querySelectorAll('.chat-ch-btn').forEach(b => b.classList.remove('active')); const btn = document.querySelector(`[data-channel="${ch}"]`); if (btn) btn.classList.add('active'); this.renderMessages(); },
   renderMessages() {

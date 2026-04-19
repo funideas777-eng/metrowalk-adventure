@@ -134,6 +134,114 @@ export default {
 };
 
 // ============================================================
+// Durable Object：團隊分數分散式計數器
+// 每個 TeamCounter 實例管理一支隊伍的分數
+// 記憶體內即時更新，背景同步到 D1
+// 優點：原子遞增、無競態條件、<10ms 延遲
+// ============================================================
+export class TeamCounter {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    this.scores = new Map(); // teamId → totalPoints
+    this.dirty = false;
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const op = url.searchParams.get('op');
+
+    // 首次載入：從 D1 讀取所有隊伍分數
+    if (this.scores.size === 0) {
+      const { results } = await this.env.DB.prepare(
+        'SELECT teamId, totalPoints FROM Teams'
+      ).all();
+      results.forEach(r => this.scores.set(r.teamId, r.totalPoints || 0));
+    }
+
+    if (op === 'get') {
+      return Response.json({ rankings: [...this.scores.entries()].map(([teamId, pts]) => ({ teamId, totalPoints: pts })) });
+    }
+
+    if (op === 'increment') {
+      const { teamId, delta } = await request.json();
+      const cur = this.scores.get(teamId) || 0;
+      this.scores.set(teamId, cur + delta);
+      this.dirty = true;
+      // 背景 flush 到 D1（不阻擋回應）
+      this.state.waitUntil(this.flushToD1());
+      return Response.json({ success: true, teamId, newTotal: cur + delta });
+    }
+
+    if (op === 'set') {
+      const { teamId, total } = await request.json();
+      this.scores.set(teamId, total);
+      this.dirty = true;
+      this.state.waitUntil(this.flushToD1());
+      return Response.json({ success: true });
+    }
+
+    if (op === 'resync') {
+      // 從 D1 TeamPoints 重新計算
+      const { results } = await this.env.DB.prepare(
+        'SELECT teamId, SUM(points) as total FROM TeamPoints GROUP BY teamId'
+      ).all();
+      this.scores.clear();
+      results.forEach(r => this.scores.set(r.teamId, r.total || 0));
+      this.dirty = true;
+      this.state.waitUntil(this.flushToD1());
+      return Response.json({ success: true, count: results.length });
+    }
+
+    return new Response('Unknown op', { status: 400 });
+  }
+
+  async flushToD1() {
+    if (!this.dirty) return;
+    this.dirty = false;
+    const entries = [...this.scores.entries()];
+    if (!entries.length) return;
+    // 批次寫入 Teams 表
+    const stmts = entries.map(([teamId, pts]) =>
+      this.env.DB.prepare('UPDATE Teams SET totalPoints = ? WHERE teamId = ?').bind(pts, teamId)
+    );
+    try {
+      await this.env.DB.batch(stmts);
+      await this.env.KV.delete('teams');
+      await this.env.KV.delete('rankings');
+    } catch (e) {
+      this.dirty = true; // 失敗保留 dirty flag 下次再試
+    }
+  }
+}
+
+// 工具函數：取得單一 global TeamCounter（所有請求共用同一實例）
+function getTeamCounter(env) {
+  const id = env.TEAM_COUNTER.idFromName('global');
+  return env.TEAM_COUNTER.get(id);
+}
+
+async function doIncrement(env, teamId, delta) {
+  const stub = getTeamCounter(env);
+  await stub.fetch('https://do/counter?op=increment', {
+    method: 'POST',
+    body: JSON.stringify({ teamId, delta })
+  });
+}
+
+async function doGetRankings(env) {
+  const stub = getTeamCounter(env);
+  const res = await stub.fetch('https://do/counter?op=get');
+  return await res.json();
+}
+
+async function doResync(env) {
+  const stub = getTeamCounter(env);
+  const res = await stub.fetch('https://do/counter?op=resync');
+  return await res.json();
+}
+
+// ============================================================
 // GET 路由
 // ============================================================
 async function handleGet(p, env) {
@@ -155,6 +263,8 @@ async function handleGet(p, env) {
     case 'getPendingPhotos': return getPendingPhotos(p, env);
     case 'getQuizQuestion':  return getQuizQuestion(p, env);
     case 'startGame':        return startGame(p, env);
+    case 'getOnlineTeam':    return getOnlineTeam(p, env);
+    case 'getEventStatus':   return getEventStatus(p, env);
     default: return { error: 'Unknown action: ' + action };
   }
 }
@@ -179,6 +289,8 @@ async function handlePost(body, env, request, ctx) {
     case 'answerQuiz':       return answerQuiz(body, env);
     case 'adminLogin':       return adminLogin(body, env);
     case 'resetAll':         return resetAll(body, env);
+    case 'heartbeat':        return heartbeat(body, env);
+    case 'updateEventTotal': return updateEventTotal(body, env);
     default: return { error: 'Unknown action' };
   }
 }
@@ -242,14 +354,37 @@ async function getGameScores(p, env) {
 }
 
 async function getTeamRankings(env) {
+  // KV 快取 60s（免費層級讀取）
   const cached = await env.KV.get('rankings', 'json');
   if (cached) return cached;
-  const { results } = await env.DB.prepare(
-    'SELECT teamId, teamName, teamEmoji, totalPoints FROM Teams ORDER BY totalPoints DESC'
-  ).all();
-  const data = { rankings: results };
-  await env.KV.put('rankings', JSON.stringify(data), { expirationTtl: 60 });
-  return data;
+  // 優先從 Durable Object 讀（即時分數）+ 合併 Teams 名稱
+  try {
+    const doData = await doGetRankings(env);
+    const { results: teams } = await env.DB.prepare(
+      'SELECT teamId, teamName, teamEmoji FROM Teams'
+    ).all();
+    const nameMap = {};
+    teams.forEach(t => { nameMap[t.teamId] = t; });
+    const rankings = doData.rankings
+      .map(r => ({
+        teamId: r.teamId,
+        teamName: nameMap[r.teamId]?.teamName || '',
+        teamEmoji: nameMap[r.teamId]?.teamEmoji || '',
+        totalPoints: r.totalPoints
+      }))
+      .sort((a, b) => b.totalPoints - a.totalPoints);
+    const data = { rankings };
+    await env.KV.put('rankings', JSON.stringify(data), { expirationTtl: 60 });
+    return data;
+  } catch (e) {
+    // DO 失敗 fallback 到 D1
+    const { results } = await env.DB.prepare(
+      'SELECT teamId, teamName, teamEmoji, totalPoints FROM Teams ORDER BY totalPoints DESC'
+    ).all();
+    const data = { rankings: results };
+    await env.KV.put('rankings', JSON.stringify(data), { expirationTtl: 60 });
+    return data;
+  }
 }
 
 async function getBroadcasts(p, env) {
@@ -527,6 +662,8 @@ async function recalcPoints(env) {
       (SELECT SUM(points) FROM TeamPoints WHERE TeamPoints.teamId = Teams.teamId), 0
     )
   `).run();
+  // 通知 Durable Object 重新同步
+  try { await doResync(env); } catch (e) { /* DO 失敗不影響主流程 */ }
   await env.KV.delete('teams');
   await env.KV.delete('rankings');
 }
@@ -603,6 +740,112 @@ async function recalcTeamPoints(b, env) {
   if (!await adminCheck(b.token, env)) return { error: 'Unauthorized' };
   await recalcPoints(env);
   return { success: true };
+}
+
+// ============================================================
+// 在線狀態系統（KV + TTL 90s）
+// ============================================================
+// Key 格式：presence_<teamId>_<playerId> → value: playerName|teamName|teamEmoji|timestamp
+// 使用 KV.list({ prefix: 'presence_' }) 查詢所有在線
+
+async function heartbeat(b, env) {
+  if (!b.playerId || b.teamId === undefined) return { error: 'Missing fields' };
+  const teamId = parseInt(b.teamId);
+  const key = `presence_${teamId}_${b.playerId}`;
+  const val = JSON.stringify({
+    n: String(b.playerName || '').substring(0, 20),
+    tn: String(b.teamName || '').substring(0, 20),
+    te: String(b.teamEmoji || '').substring(0, 4),
+    t: Date.now()
+  });
+  // TTL 90s（超過未續約 → 視為離線）
+  await env.KV.put(key, val, { expirationTtl: 90 });
+  return { success: true };
+}
+
+// 取得特定隊伍在線列表
+async function getOnlineTeam(p, env) {
+  const teamId = parseInt(p.teamId);
+  if (isNaN(teamId)) return { error: 'Invalid teamId' };
+  const list = await env.KV.list({ prefix: `presence_${teamId}_` });
+  // 批次讀取 value（前 100 人）
+  const keys = list.keys.slice(0, 100);
+  const members = [];
+  for (const k of keys) {
+    const raw = await env.KV.get(k.name);
+    if (!raw) continue;
+    try {
+      const v = JSON.parse(raw);
+      const playerId = k.name.split('_').slice(2).join('_');
+      members.push({ playerId, name: v.n, lastSeen: v.t });
+    } catch (e) { /* ignore */ }
+  }
+  return { teamId, count: members.length, members };
+}
+
+// Admin 儀表板：整體在線狀態 + 各隊報到
+async function getEventStatus(p, env) {
+  // KV 快取 10 秒（昂貴操作）
+  const cached = await env.KV.get('event_status', 'json');
+  if (cached) return cached;
+
+  // 1. 全體在線：列出所有 presence_ key
+  const all = await env.KV.list({ prefix: 'presence_' });
+  const onlineByTeam = {};
+  let totalOnline = 0;
+  all.keys.forEach(k => {
+    const parts = k.name.split('_'); // presence_<teamId>_<playerId>
+    const tid = parseInt(parts[1]);
+    if (isNaN(tid)) return;
+    onlineByTeam[tid] = (onlineByTeam[tid] || 0) + 1;
+    totalOnline++;
+  });
+
+  // 2. 註冊總數 + 各隊註冊數
+  const { results: teamCounts } = await env.DB.prepare(
+    'SELECT teamId, COUNT(*) as registered FROM Players GROUP BY teamId'
+  ).all();
+  const registeredByTeam = {};
+  let totalRegistered = 0;
+  teamCounts.forEach(r => { registeredByTeam[r.teamId] = r.registered; totalRegistered += r.registered; });
+
+  // 3. 預計總人數（從 Config 表）
+  const cfg = await env.DB.prepare("SELECT value FROM Config WHERE key = 'event_total_people'").first();
+  const eventTotal = cfg ? parseInt(cfg.value) || 0 : 0;
+
+  // 4. 組合資料
+  const { results: teams } = await env.DB.prepare('SELECT teamId, teamName, teamEmoji FROM Teams ORDER BY teamId').all();
+  const teamStatus = teams.map(t => ({
+    teamId: t.teamId,
+    teamName: t.teamName,
+    teamEmoji: t.teamEmoji,
+    registered: registeredByTeam[t.teamId] || 0,
+    online: onlineByTeam[t.teamId] || 0
+  }));
+
+  const data = {
+    totalOnline,
+    totalRegistered,
+    eventTotal,
+    onlinePercent: eventTotal > 0 ? Math.round(totalOnline / eventTotal * 100) : 0,
+    registeredPercent: eventTotal > 0 ? Math.round(totalRegistered / eventTotal * 100) : 0,
+    teams: teamStatus,
+    timestamp: Date.now()
+  };
+  await env.KV.put('event_status', JSON.stringify(data), { expirationTtl: 60 });
+  return data;
+}
+
+async function updateEventTotal(b, env) {
+  if (!await adminCheck(b.token, env)) return { error: 'Unauthorized' };
+  const total = parseInt(b.total);
+  if (isNaN(total) || total < 0 || total > 100000) return { error: 'Invalid total' };
+  await env.DB.prepare(
+    "INSERT INTO Config (key, value) VALUES ('event_total_people', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).bind(String(total)).run();
+  await env.KV.delete('event_status');
+  await auditLog(env, 'updateEventTotal', { total });
+  return { success: true, total };
 }
 
 async function sendChat(b, env) {

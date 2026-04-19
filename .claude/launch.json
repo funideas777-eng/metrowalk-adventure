@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "metrowalk",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "/Users/minialbert/claude/metrowalk-adventure", "-p", "3458", "-c-1", "--cors"],
+      "port": 3458
+    }
+  ]
+}

@@ -40,6 +40,6 @@
   function selectChip(el, id) { document.querySelectorAll('.game-chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); ScoreboardEngine.selectGame(id); }
   ScoreboardEngine.init();
 </script>
-<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<script src="js/sw-manager.js"></script>
 </body>
 </html>

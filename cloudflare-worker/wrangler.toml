@@ -29,3 +29,12 @@ R2_PUBLIC_URL = "https://pub-974830b23d4947ddb6250ae13ca82197.r2.dev"
 
 # 機密變數 ADMIN_PASSWORD 和 SIGN_SECRET 透過 `wrangler secret put` 設定
 # 不寫在此檔案（避免被 git 追蹤）
+
+# ====== Durable Objects（團隊分數分散式計數器）======
+[[durable_objects.bindings]]
+name = "TEAM_COUNTER"
+class_name = "TeamCounter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TeamCounter"]

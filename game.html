@@ -616,7 +616,8 @@
   });
 </script>
 <script>
-  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(function(r) { r.update(); }); }
+  // SW 註冊由 sw-manager.js 處理
 </script>
+<script src="js/sw-manager.js"></script>
 </body>
 </html>
