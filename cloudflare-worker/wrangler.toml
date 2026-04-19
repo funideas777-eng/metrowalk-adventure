@@ -2,25 +2,30 @@ name = "metrowalk-api"
 main = "worker.js"
 compatibility_date = "2024-12-01"
 
+# Smart Placement：讓 Worker 跑在 D1 附近降低延遲（Paid 方案專屬）
+[placement]
+mode = "smart"
+
 # ====== D1 Database ======
 [[d1_databases]]
 binding = "DB"
-database_name = "metrowalk-db"
-database_id = "YOUR_D1_DATABASE_ID"  # wrangler d1 create metrowalk-db 後填入
+database_name = "metrowalk-db-prod"
+database_id = "8ba5c627-c455-4c57-8d7b-f20832a2bdb4"
 
 # ====== R2 Storage (照片) ======
 [[r2_buckets]]
 binding = "R2"
-bucket_name = "metrowalk-photos"
-# wrangler r2 bucket create metrowalk-photos
+bucket_name = "metrowalk-photos-prod"
 
 # ====== KV (快取 + Rate Limit) ======
 [[kv_namespaces]]
 binding = "KV"
-id = "YOUR_KV_NAMESPACE_ID"  # wrangler kv namespace create metrowalk-cache 後填入
+id = "e4cae06b41df4a4d8c34de91b52d3f5e"
 
-# ====== 環境變數 ======
+# ====== 環境變數（非機密）======
 [vars]
-ADMIN_PASSWORD = "11201120"
-SIGN_SECRET = "mw_s3cure_2026"
 CORS_ORIGIN = "https://funideas777-eng.github.io"
+R2_PUBLIC_URL = "https://pub-974830b23d4947ddb6250ae13ca82197.r2.dev"
+
+# 機密變數 ADMIN_PASSWORD 和 SIGN_SECRET 透過 `wrangler secret put` 設定
+# 不寫在此檔案（避免被 git 追蹤）

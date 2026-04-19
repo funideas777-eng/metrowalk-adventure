@@ -17,7 +17,7 @@ const { execSync } = require('child_process');
 // === 設定 ===
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyRK_01YMMdSEQJ3B2MdEn0eKCjyxhu8KICba7SBTzbjQwXqHEulMm7BHs9awSsA2hrSg/exec';
 const ADMIN_PWD = '11201120';
-const DB_NAME = 'metrowalk-db';
+const DB_NAME = 'metrowalk-db-prod';
 
 async function fetchGAS(action, params = {}) {
   const url = new URL(GAS_URL);
@@ -31,7 +31,7 @@ function d1Execute(sql) {
   // 轉義單引號
   const escaped = sql.replace(/'/g, "'\\''");
   try {
-    execSync(`wrangler d1 execute ${DB_NAME} --command='${escaped}'`, { stdio: 'pipe' });
+    execSync(`wrangler d1 execute ${DB_NAME} --remote --command='${escaped}'`, { stdio: 'pipe' });
   } catch (e) {
     console.error('D1 execute error:', sql.substring(0, 100));
   }
@@ -43,7 +43,7 @@ function d1Batch(statements) {
   const tmp = '/tmp/migrate_batch.sql';
   fs.writeFileSync(tmp, statements.join('\n'));
   try {
-    execSync(`wrangler d1 execute ${DB_NAME} --file=${tmp}`, { stdio: 'inherit' });
+    execSync(`wrangler d1 execute ${DB_NAME} --remote --file=${tmp} -y`, { stdio: 'inherit' });
   } catch (e) {
     console.error('D1 batch error');
   }

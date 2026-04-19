@@ -13,10 +13,10 @@ const CONFIG = {
   // === 後端選擇：'gas' 或 'cf' ===
   // 'gas' = Google Apps Script（預設，10 節點分流）
   // 'cf'  = Cloudflare Workers（備用，高性能方案）
-  BACKEND: 'gas',
+  BACKEND: 'cf',
 
   // === Cloudflare Workers 設定 ===
-  CF_URL: 'https://metrowalk-api.your-subdomain.workers.dev',
+  CF_URL: 'https://metrowalk-api.funideas777.workers.dev',
 
   // === 10 GAS 分流節點 ===
   // 部署方式：複製同一份 GAS 專案 10 次，全部綁同一份 Google Sheets

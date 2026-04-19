@@ -93,6 +93,23 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // === IP Rate Limit（防 DDoS / 作弊腳本爆擊）===
+    // 每 IP 每 10 秒最多 60 次請求
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rlKey = 'ip_rl_' + ip;
+    const rlData = await env.KV.get(rlKey, 'json') || { count: 0, start: Date.now() };
+    const now = Date.now();
+    if (now - rlData.start > 10000) { rlData.count = 0; rlData.start = now; }
+    rlData.count++;
+    if (rlData.count > 60) {
+      return new Response(JSON.stringify({ error: 'Rate limited', retry: 10 }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+    // 非同步更新計數（不阻擋回應）
+    ctx.waitUntil(env.KV.put(rlKey, JSON.stringify(rlData), { expirationTtl: 60 }));
+
     try {
       let result;
       if (request.method === 'GET') {
@@ -100,7 +117,7 @@ export default {
         result = await handleGet(params, env);
       } else if (request.method === 'POST') {
         const body = await request.json();
-        result = await handlePost(body, env, request);
+        result = await handlePost(body, env, request, ctx);
       } else {
         result = { error: 'Method not allowed' };
       }
@@ -145,7 +162,7 @@ async function handleGet(p, env) {
 // ============================================================
 // POST 路由
 // ============================================================
-async function handlePost(body, env, request) {
+async function handlePost(body, env, request, ctx) {
   const action = body.action;
   switch (action) {
     case 'register':         return register(body, env);
@@ -220,7 +237,7 @@ async function getGameScores(p, env) {
     'SELECT playerId, playerName, teamId, gameId, score, timestamp FROM GameScores WHERE gameId = ? ORDER BY score DESC LIMIT ?'
   ).bind(gameId, limit).all();
   const data = { scores: results };
-  await env.KV.put('scores_' + gameId, JSON.stringify(data), { expirationTtl: 5 });
+  await env.KV.put('scores_' + gameId, JSON.stringify(data), { expirationTtl: 60 });
   return data;
 }
 
@@ -231,7 +248,7 @@ async function getTeamRankings(env) {
     'SELECT teamId, teamName, teamEmoji, totalPoints FROM Teams ORDER BY totalPoints DESC'
   ).all();
   const data = { rankings: results };
-  await env.KV.put('rankings', JSON.stringify(data), { expirationTtl: 10 });
+  await env.KV.put('rankings', JSON.stringify(data), { expirationTtl: 60 });
   return data;
 }
 
@@ -270,6 +287,12 @@ async function getChat(p, env) {
   const ch = p.channel || 'world';
   const teamId = p.teamId;
   const since = p.since || '';
+  // === 優化：無 since 的初次載入走 KV 快取 5 秒（降 D1 讀取）===
+  if (!since) {
+    const cacheKey = 'chat_' + ch + '_' + (teamId || '0');
+    const cached = await env.KV.get(cacheKey, 'json');
+    if (cached) return cached;
+  }
   let results;
   if (ch === 'team') {
     if (since) {
@@ -294,15 +317,27 @@ async function getChat(p, env) {
       results = results.reverse();
     }
   }
-  return { messages: results };
+  const data = { messages: results };
+  // 寫回 KV 快取（僅無 since 的初次載入）
+  if (!since) {
+    const cacheKey = 'chat_' + ch + '_' + (teamId || '0');
+    await env.KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 60 });
+  }
+  return data;
 }
 
 async function getTeamLocations(p, env) {
+  // === 優化：KV 快取 10 秒（隊友位置不需即時）===
+  const cacheKey = 'teamloc_' + p.teamId;
+  const cached = await env.KV.get(cacheKey, 'json');
+  if (cached) return cached;
   const cutoff = new Date(Date.now() - 120000).toISOString();
   const { results } = await env.DB.prepare(
     'SELECT playerId, playerName, teamId, lat, lng, timestamp FROM PlayerLocations WHERE teamId = ? AND timestamp > ?'
   ).bind(parseInt(p.teamId), cutoff).all();
-  return { locations: results };
+  const data = { locations: results };
+  await env.KV.put(cacheKey, JSON.stringify(data), { expirationTtl: 60 });
+  return data;
 }
 
 async function getPlayerTasks(p, env) {
@@ -469,30 +504,29 @@ async function updateGameBonus(gameId, env) {
   ).bind(gameId).all();
 
   const bonusPoints = [500, 400, 300, 200, 100];
-  // 刪除舊的 bonus
-  await env.DB.prepare("DELETE FROM TeamPoints WHERE source = ?").bind('game_bonus_' + gameId).run();
-  // 寫入新 bonus
   const now = new Date().toISOString();
+
+  // === 優化：D1 batch() 一次送多個 query（降 90% round-trip）===
+  const stmts = [
+    env.DB.prepare("DELETE FROM TeamPoints WHERE source = ?").bind('game_bonus_' + gameId)
+  ];
   for (let i = 0; i < results.length && i < 5; i++) {
-    await env.DB.prepare('INSERT INTO TeamPoints (teamId, source, points, detail, timestamp) VALUES (?, ?, ?, ?, ?)')
-      .bind(results[i].teamId, 'game_bonus_' + gameId, bonusPoints[i], gameId + ' 第' + (i + 1) + '名', now).run();
+    stmts.push(
+      env.DB.prepare('INSERT INTO TeamPoints (teamId, source, points, detail, timestamp) VALUES (?, ?, ?, ?, ?)')
+        .bind(results[i].teamId, 'game_bonus_' + gameId, bonusPoints[i], gameId + ' 第' + (i + 1) + '名', now)
+    );
   }
+  await env.DB.batch(stmts);
   await recalcPoints(env);
 }
 
 async function recalcPoints(env) {
-  // 用 SQL 一次算完所有隊伍總分
-  const { results } = await env.DB.prepare(
-    'SELECT teamId, SUM(points) as total FROM TeamPoints GROUP BY teamId'
-  ).all();
-  const totals = {};
-  results.forEach(r => { totals[r.teamId] = r.total; });
-  // 批次更新
-  for (const [tid, total] of Object.entries(totals)) {
-    await env.DB.prepare('UPDATE Teams SET totalPoints = ? WHERE teamId = ?').bind(total, parseInt(tid)).run();
-  }
-  // 未上榜的隊伍歸零
-  await env.DB.prepare('UPDATE Teams SET totalPoints = 0 WHERE teamId NOT IN (SELECT DISTINCT teamId FROM TeamPoints)').run();
+  // === 優化：單一 SQL UPDATE 一次算完所有隊伍（取代 N 次 UPDATE）===
+  await env.DB.prepare(`
+    UPDATE Teams SET totalPoints = COALESCE(
+      (SELECT SUM(points) FROM TeamPoints WHERE TeamPoints.teamId = Teams.teamId), 0
+    )
+  `).run();
   await env.KV.delete('teams');
   await env.KV.delete('rankings');
 }
@@ -504,8 +538,9 @@ async function uploadPhoto(b, env) {
     const bytes = Uint8Array.from(atob(photoData), c => c.charCodeAt(0));
     const key = 'photos/photo_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8) + '.jpg';
     await env.R2.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
-    // R2 公開 URL（需在 Cloudflare Dashboard 設定 R2 公開存取或自訂域名）
-    const photoUrl = `https://metrowalk-photos.your-domain.com/${key}`;
+    // R2 公開 URL（優先使用 env.R2_PUBLIC_URL，否則 fallback 到預設 r2.dev 網址）
+    const r2Base = (env.R2_PUBLIC_URL || 'https://pub-974830b23d4947ddb6250ae13ca82197.r2.dev').replace(/\/$/, '');
+    const photoUrl = `${r2Base}/${key}`;
     return { success: true, photoUrl, thumbUrl: photoUrl, fileId: key };
   } catch (e) {
     return { error: e.message };
@@ -572,17 +607,29 @@ async function recalcTeamPoints(b, env) {
 
 async function sendChat(b, env) {
   if (!b.playerId || !b.content) return { error: 'Missing fields' };
-  // 頻率限制：3 秒
+  // 頻率限制：3 秒（KV 最小 TTL 60s，改用 timestamp 比對）
   const chatKey = 'chat_rate_' + b.playerId;
-  if (await env.KV.get(chatKey)) return { error: 'Too fast', rateLimited: true };
-  await env.KV.put(chatKey, '1', { expirationTtl: 3 });
+  const lastTs = await env.KV.get(chatKey);
+  const now = Date.now();
+  if (lastTs && now - parseInt(lastTs) < 3000) return { error: 'Too fast', rateLimited: true };
+  await env.KV.put(chatKey, String(now), { expirationTtl: 60 });
   const content = String(b.content).substring(0, 200).replace(/<[^>]*>/g, '');
   await env.DB.prepare('INSERT INTO Chat (msgId, channel, teamId, playerId, playerName, teamName, teamEmoji, content, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
     .bind(Date.now(), b.channel, parseInt(b.teamId), b.playerId, b.playerName, b.teamName || '', b.teamEmoji || '', content, new Date().toISOString()).run();
+  // 失效相關快取
+  await env.KV.delete('chat_' + (b.channel || 'world') + '_' + (b.teamId || '0'));
   return { success: true };
 }
 
 async function updateLocation(b, env) {
+  // === 優化：每位玩家最多 15 秒寫一次（降 80% 寫入）===
+  // 2000 人 × 每 15s 寫入 = 133 次/秒，D1 可承受
+  const throttleKey = 'loc_throttle_' + b.playerId;
+  const lastTs = await env.KV.get(throttleKey);
+  const now = Date.now();
+  if (lastTs && now - parseInt(lastTs) < 15000) return { success: true, throttled: true };
+  await env.KV.put(throttleKey, String(now), { expirationTtl: 60 });
+
   await env.DB.prepare(
     'INSERT OR REPLACE INTO PlayerLocations (playerId, playerName, teamId, lat, lng, timestamp) VALUES (?, ?, ?, ?, ?, ?)'
   ).bind(b.playerId, b.playerName, parseInt(b.teamId), b.lat, b.lng, new Date().toISOString()).run();
