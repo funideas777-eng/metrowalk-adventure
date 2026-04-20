@@ -53,10 +53,13 @@ window.QuizGame = {
 
   // 前端回退模式（相容舊版 GAS）
   useFallback() {
-    if (CONFIG.QUIZ_QUESTIONS && CONFIG.QUIZ_QUESTIONS.length > 0) {
+    if (typeof CONFIG !== 'undefined' && CONFIG.QUIZ_QUESTIONS && CONFIG.QUIZ_QUESTIONS.length > 0) {
       this.questions = this.shuffle([].concat(CONFIG.QUIZ_QUESTIONS));
       this.currentQuestion = null;
       this.showQuestionLocal();
+    } else {
+      var c = document.getElementById('quiz-container');
+      if (c) c.innerHTML = '<div style="text-align:center;padding:40px;color:#f44336;">題庫載入失敗，請檢查網路連線</div>';
     }
   },
 
@@ -192,8 +195,12 @@ window.QuizGame = {
       if (self.timeLeft <= 0) {
         clearInterval(self.questionTimer);
         if (!self.answered) {
-          if (self.currentQuestion) self.answerRemote(-1);
-          else self.answerLocal(-1);
+          // 守備：timeout 時 session 仍須存在才進 answerRemote
+          try {
+            var s = Auth.getSession();
+            if (s && self.currentQuestion) self.answerRemote(-1);
+            else self.answerLocal(-1);
+          } catch(e) { self.answerLocal(-1); }
         }
       }
     }, 1000);

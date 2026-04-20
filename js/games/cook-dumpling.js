@@ -101,7 +101,7 @@ window.CookDumplingGame = {
       if (el) el.textContent = Math.min(self.tapCount, goal) + ' / ' + goal;
       var mix = document.getElementById('dumpling-mix');
       if (mix) { mix.style.transform = 'rotate(' + (self.tapCount * 15) + 'deg)'; }
-      if (self.tapCount >= goal) self.completeStep(85 + Math.floor(Math.random() * 16));
+      if (self.tapCount >= goal) self.completeStep(93);
     } else if (self.step === 2) {
       self.pleats = self.tapCount;
       if (el) el.textContent = '褶子: ' + Math.min(self.tapCount, goal) + ' / ' + goal;
@@ -123,7 +123,7 @@ window.CookDumplingGame = {
     if (bar) bar.style.width = pct + '%';
     var el = document.getElementById('dumpling-count');
     if (el) el.textContent = Math.min(self.tapCount, 20) + ' / 20';
-    if (self.tapCount >= 20) self.completeStep(80 + Math.floor(Math.random() * 21));
+    if (self.tapCount >= 20) self.completeStep(90);
   },
 
   startSteamTimer: function() {
@@ -151,7 +151,7 @@ window.CookDumplingGame = {
     var self = this;
     if (self.stepDone) return;
     if (self.steamGood) {
-      self.completeStep(95 + Math.floor(Math.random() * 6));
+      self.completeStep(98);
     } else if (self.steamProgress < 70) {
       var txt = document.getElementById('dumpling-count');
       if (txt) { txt.textContent = '還沒蒸熟！再等等...'; txt.style.color = '#ff9800'; }
@@ -167,7 +167,7 @@ window.CookDumplingGame = {
     if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
     var el = document.getElementById('dumpling-count');
     if (el) el.textContent = self.tapCount + ' / 3';
-    if (self.tapCount >= 3) self.completeStep(90 + Math.floor(Math.random() * 11));
+    if (self.tapCount >= 3) self.completeStep(95);
   },
 
   completeStep: function(accuracy) {

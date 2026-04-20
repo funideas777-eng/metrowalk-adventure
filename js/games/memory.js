@@ -61,8 +61,9 @@ window.MemoryGame = {
         AudioEngine.cardMiss();
         this.game.resetCombo();
         this.wrongCount++;
-        // Every 5 wrong matches = lose life
-        if (this.wrongCount % 5 === 0) {
+        // 扣命寬容度隨回合放寬：R1=5, R2=7, R3+=9（高輪次格子大更難記）
+        var threshold = this.round === 1 ? 5 : this.round === 2 ? 7 : 9;
+        if (this.wrongCount % threshold === 0) {
           this.game.loseLife();
         }
         setTimeout(function() { a.flipped = false; b.flipped = false; self.flipped = []; self.locked = false; self.renderCards(); }, 800);

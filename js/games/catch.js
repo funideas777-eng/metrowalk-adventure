@@ -33,7 +33,8 @@ window.CatchGame = {
     var self = this;
     this.spawnTimer = setInterval(function() {
       if (!self.game.running || self.game.paused) return;
-      var bombChance = self.round >= 2 ? 0.15 + (self.round-2)*0.05 : 0;
+      // 炸彈比例上限 25%，避免高輪次幾乎全炸彈
+      var bombChance = self.round >= 2 ? Math.min(0.25, 0.15 + (self.round-2)*0.05) : 0;
       var isBomb = Math.random() < bombChance;
       self.items.push({
         x: Math.random() * (self.canvasW - 40) + 20,
@@ -49,8 +50,9 @@ window.CatchGame = {
     for (var i = this.items.length - 1; i >= 0; i--) {
       this.items[i].y += this.fallSpeed;
       var item = this.items[i];
-      // Caught by basket (raised higher to avoid touch zone)
-      if (item.y >= this.canvasH - 110 && item.y <= this.canvasH - 70 &&
+      // Caught by basket — 命中區以 basketY 為中心動態計算，隨 canvasH 自適應
+      var basketY = this.canvasH - 90; // 與 render 裡的籃子位置一致
+      if (item.y >= basketY - 20 && item.y <= basketY + 20 &&
           item.x >= this.basket.x - 10 && item.x <= this.basket.x + this.basket.width + 10) {
         if (item.isBomb) {
           // Bomb = lose life

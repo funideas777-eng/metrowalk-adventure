@@ -93,7 +93,7 @@ window.CookCakeGame = {
       var sugar = document.getElementById('cake-sugar');
       if (sugar) { sugar.style.transform = 'rotate(' + (self.tapCount * 8) + 'deg)'; }
     }
-    if (self.tapCount >= goal) self.completeStep(85 + Math.floor(Math.random() * 16));
+    if (self.tapCount >= goal) self.completeStep(93);
   },
 
   handleFill: function() {
@@ -158,7 +158,7 @@ window.CookCakeGame = {
       if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
       var ring = document.getElementById('cake-mold-ring');
       if (ring) { ring.style.borderColor = '#ffd700'; ring.style.transform = 'scale(0.9)'; setTimeout(function() { if (ring) ring.style.transform = 'scale(1)'; }, 150); }
-      if (self.moldCount >= 3) self.completeStep(95 + Math.floor(Math.random() * 6));
+      if (self.moldCount >= 3) self.completeStep(98);
       else {
         var txt = document.getElementById('cake-count');
         if (txt) txt.textContent = '好！(' + self.moldCount + '/3)';

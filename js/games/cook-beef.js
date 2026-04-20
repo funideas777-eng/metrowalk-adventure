@@ -97,7 +97,7 @@ window.CookBeefGame = {
     if (el) el.textContent = Math.min(self.tapCount, 20) + ' / 20';
     var chop = document.getElementById('beef-chop');
     if (chop) { chop.style.transform = 'scale(1.2)'; setTimeout(function() { if (chop) chop.style.transform = 'scale(1)'; }, 100); }
-    if (self.tapCount >= 20) self.completeStep(85 + Math.floor(Math.random() * 16));
+    if (self.tapCount >= 20) self.completeStep(93);
   },
 
   handleStir: function() {
@@ -106,7 +106,7 @@ window.CookBeefGame = {
     self.tapCount++;
     var el = document.getElementById('beef-count');
     if (el) el.textContent = Math.min(self.tapCount, 25) + ' / 25';
-    if (self.tapCount >= 25) self.completeStep(80 + Math.floor(Math.random() * 21));
+    if (self.tapCount >= 25) self.completeStep(90);
   },
 
   startBoil: function() {
@@ -167,7 +167,7 @@ window.CookBeefGame = {
     var self = this;
     if (self.stepDone) return;
     if (self.noodleReady) {
-      self.completeStep(95 + Math.floor(Math.random() * 6));
+      self.completeStep(98);
     } else {
       var txt = document.getElementById('beef-noodle-text');
       if (txt) { txt.textContent = '還沒熟！再等等...'; txt.style.color = '#ff9800'; }
@@ -183,7 +183,7 @@ window.CookBeefGame = {
     if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
     var el = document.getElementById('beef-count');
     if (el) el.textContent = self.tapCount + ' / 3';
-    if (self.tapCount >= 3) self.completeStep(90 + Math.floor(Math.random() * 11));
+    if (self.tapCount >= 3) self.completeStep(95);
   },
 
   completeStep: function(accuracy) {

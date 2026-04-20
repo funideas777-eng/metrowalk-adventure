@@ -26,7 +26,8 @@ window.CookBobaGame = {
     var self = this;
     var s = self.STEPS[self.step];
     self.tapCount = 0; self.gauge = 0; self.stepDone = false; self.pressing = false; self.stepScore = 0;
-    var progPct = ((self.step) / 5 * 100);
+    // 修正 off-by-one：以「正在進行第 N 步 / 共 5 步」的進度顯示
+    var progPct = Math.min(100, ((self.step + 1) / 5) * 100);
     var html = '<div style="text-align:center;color:white;padding:12px;font-size:14px;">' +
       '<div style="background:#333;border-radius:8px;height:8px;margin:0 20px 10px;"><div style="background:linear-gradient(90deg,#ff6b35,#ffd700);height:100%;border-radius:8px;width:' + progPct + '%;transition:width 0.3s;"></div></div>' +
       '<div style="font-size:13px;color:#aaa;">步驟 ' + (self.step+1) + ' / 5</div>' +
@@ -95,7 +96,8 @@ window.CookBobaGame = {
       var ice = document.getElementById('boba-ice');
       if (ice) ice.textContent = '🥤' + '🧊'.repeat(Math.min(self.tapCount, 3));
     }
-    if (self.tapCount >= goal) self.completeStep(90 + Math.floor(Math.random() * 11));
+    // 確定性準度：達標即 95（tap 類步驟，技巧已由「完成 goal 次」驗證）
+    if (self.tapCount >= goal) self.completeStep(95);
   },
 
   handleHold: function() {
@@ -133,7 +135,8 @@ window.CookBobaGame = {
     var el = document.getElementById('boba-count');
     var goal = self.STEPS[self.step].goal;
     if (el) el.textContent = Math.min(self.tapCount, goal) + ' / ' + goal;
-    if (self.tapCount >= goal) self.completeStep(85 + Math.floor(Math.random() * 16));
+    // 滑動攪拌：達標固定 90（已由滑動次數驗證技巧）
+    if (self.tapCount >= goal) self.completeStep(90);
   },
 
   completeStep: function(accuracy) {
@@ -179,10 +182,11 @@ window.CookBobaGame = {
 
   cleanup: function() {
     var self = this;
-    self.timers.forEach(function(t) { clearTimeout(t); });
+    self.timers.forEach(function(t) { clearTimeout(t); clearInterval(t); });
     self.timers = [];
+    self.pressing = false;
     var c = document.getElementById('cook-boba-container');
-    if (c) c.remove();
+    if (c) { c.innerHTML = ''; c.remove(); } // 先清 DOM 樹，確保 listener 被回收
     if (self.game && self.game.canvas) self.game.canvas.style.display = 'block';
   }
 };

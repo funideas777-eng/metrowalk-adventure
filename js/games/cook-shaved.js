@@ -103,7 +103,7 @@ window.CookShavedGame = {
     if (bar) bar.style.width = pct + '%';
     var el = document.getElementById('shaved-count');
     if (el) el.textContent = Math.min(self.tapCount, 25) + ' / 25';
-    if (self.tapCount >= 25) self.completeStep(85 + Math.floor(Math.random() * 16));
+    if (self.tapCount >= 25) self.completeStep(93);
   },
 
   handleStack: function() {
@@ -115,7 +115,7 @@ window.CookShavedGame = {
     if (layer) layer.style.background = 'linear-gradient(180deg,#e3f2fd,#bbdefb)';
     var el = document.getElementById('shaved-count');
     if (el) el.textContent = Math.min(self.tapCount, 5) + ' / 5';
-    if (self.tapCount >= 5) self.completeStep(90 + Math.floor(Math.random() * 11));
+    if (self.tapCount >= 5) self.completeStep(95);
   },
 
   startMangoSlicing: function() {
@@ -147,7 +147,7 @@ window.CookShavedGame = {
             if (isCorrect) {
               self.mangoHit++;
               if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
-              if (self.mangoHit >= 4) { self.completeStep(90 + Math.floor(Math.random() * 11)); }
+              if (self.mangoHit >= 4) { self.completeStep(95); }
               else { var t = setTimeout(spawnMango, 500); self.timers.push(t); }
             } else {
               if (cnt) cnt.textContent = '切錯了！';
@@ -191,7 +191,7 @@ window.CookShavedGame = {
     if (typeof AudioEngine !== 'undefined') AudioEngine.tapButton();
     var el = document.getElementById('shaved-count');
     if (el) el.textContent = self.tapCount + ' / 4';
-    if (self.tapCount >= 4) self.completeStep(90 + Math.floor(Math.random() * 11));
+    if (self.tapCount >= 4) self.completeStep(95);
   },
 
   completeStep: function(accuracy) {
