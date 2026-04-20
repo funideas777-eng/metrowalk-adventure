@@ -48,6 +48,16 @@
       <div id="teamCheckin" style="margin-top:12px;max-height:320px;overflow-y:auto;font-size:12px;"></div>
     </div>
 
+    <div class="admin-section"><h3>🧪 測試模式</h3>
+      <p style="font-size:12px;color:var(--text-light);margin-bottom:10px;">目前：<b id="currentTestMode">-</b>｜正式活動請關閉（玩家需達過關門檻才能提交分數）</p>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="setTestMode('on')">🧪 開啟測試</button>
+        <button class="btn btn-outline btn-sm" onclick="setTestMode('off')">🎯 關閉（正式）</button>
+        <button class="btn btn-outline btn-sm" onclick="setTestMode('default')">↩️ 恢復預設</button>
+      </div>
+      <div style="font-size:11px;color:#999;margin-top:8px;">本按鈕只影響本裝置。URL 加 <code>?prod=1</code> 可強制正式，<code>?test=1</code> 可強制測試。</div>
+    </div>
+
     <div class="admin-section"><h3>🚨 緊急後端切換</h3>
       <p style="font-size:12px;color:var(--text-light);margin-bottom:10px;">目前：<b id="currentBackend">-</b></p>
       <div style="display:flex;gap:8px;">
@@ -89,7 +99,7 @@
     const sel = document.getElementById('pointsTeam');
     CONFIG.TEAMS.forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.emoji} ${t.name}`; sel.appendChild(o); });
     loadDashboard(); loadPhotos(); renderEmergencyList();
-    loadEventStatus(); updateBackendDisplay();
+    loadEventStatus(); updateBackendDisplay(); updateTestModeDisplay();
     var adPI = (CONFIG.POLL_INTERVAL && CONFIG.POLL_INTERVAL.adminDashboard) || { base: 8000, jitter: 2000 };
     setInterval(() => { loadPhotos(); loadDashboard(); }, adPI.base + Math.random() * adPI.jitter);
     setInterval(loadEventStatus, 15000);
@@ -125,6 +135,20 @@
       if (res && res.success) { alert('已更新為 ' + v + ' 人'); loadEventStatus(); }
       else alert('失敗：' + (res.error || ''));
     } catch(e) { alert('失敗：' + e.message); }
+  }
+
+  // === 測試模式切換 ===
+  function updateTestModeDisplay() {
+    var ls = localStorage.getItem('testMode');
+    var label = ls === 'off' ? '❌ 關閉（正式模式）' : ls === 'on' ? '🧪 強制開啟' : '🧪 預設開啟';
+    var el = document.getElementById('currentTestMode');
+    if (el) el.textContent = label;
+  }
+  function setTestMode(mode) {
+    if (mode === 'default') localStorage.removeItem('testMode');
+    else localStorage.setItem('testMode', mode);
+    alert('已設定：' + mode + '\n重新整理頁面或分享 URL 給玩家後生效');
+    updateTestModeDisplay();
   }
 
   // === 緊急後端切換 ===

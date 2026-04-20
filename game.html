@@ -77,7 +77,7 @@
 <div class="game-page">
   <div class="top-bar" style="background:rgba(0,0,0,0.5);">
     <button class="top-bar-back" onclick="showGameSettings()">⚙️</button>
-    <div class="top-bar-title" id="gameTitle">🎮</div>
+    <div class="top-bar-title" id="gameTitle">🎮<span id="testModeBadge" style="display:none;background:#f44336;color:white;font-size:10px;padding:2px 6px;border-radius:8px;margin-left:6px;vertical-align:middle;font-weight:700;">🧪 測試</span></div>
     <div id="roundDisplay" style="width:60px;text-align:center;color:var(--accent);font-size:12px;font-weight:700;"></div>
   </div>
   <div class="game-hud">
@@ -168,6 +168,9 @@
   // === Init ===
   if (!Auth.requireLogin()) throw new Error('未登入');
   AudioEngine.init(); API.init();
+  if (typeof TEST_MODE !== 'undefined' && TEST_MODE) {
+    var _tb = document.getElementById('testModeBadge'); if (_tb) _tb.style.display = 'inline-block';
+  }
   try { Chat.init(); Chat.initDanmaku('danmakuContainer'); } catch(e) { console.warn('Chat init failed', e); }
 
   const params = new URLSearchParams(window.location.search);
@@ -524,12 +527,14 @@
     // 最終定分：夾到上限後鎖定，避免後續再被遊戲更新
     GameState.score = clampScore(GameState.score);
     var threshold = gameConfig.threshold || 0;
-    var passed = GameState.score >= threshold;
+    var testMode = (typeof TEST_MODE !== 'undefined') && TEST_MODE;
+    // 測試模式：永遠視為通過，讓所有遊戲可直接體驗完整流程
+    var passed = testMode ? true : (GameState.score >= threshold);
 
     document.getElementById('resultIcon').textContent = passed ? '🏆' : '😢';
     document.getElementById('resultScore').textContent = GameState.score;
     document.getElementById('resultCombo').textContent = GameState.maxCombo > 0 ? '🔥 最高連擊 ' + GameState.maxCombo : '';
-    document.getElementById('resultThreshold').textContent = '過關門檻: ' + threshold + ' 分';
+    document.getElementById('resultThreshold').textContent = '過關門檻: ' + threshold + ' 分' + (testMode ? '（🧪 測試模式：不限分數）' : '');
 
     var failEl = document.getElementById('resultFail');
     var bonusEl = document.getElementById('resultBonus');

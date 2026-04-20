@@ -306,8 +306,29 @@ const CONFIG = {
   ]
 };
 
-// TEST MODE
-const TEST_MODE = new URLSearchParams(window.location.search).has('test');
+// ============================================================
+// TEST MODE（測試模式）
+// 規則：
+//   1. 預設開啟（方便開發與體驗）
+//   2. 正式活動時：admin 後台關閉，或 URL 加 ?prod=1
+//   3. localStorage.testMode = 'off' 永久關閉（admin 切換後生效）
+// 效果：
+//   - 所有小遊戲直接可玩（原本就無 GPS gate，僅作語意保留）
+//   - 分數未達過關門檻仍可提交
+//   - UI 顯示「🧪 測試模式」紅色徽章
+// ============================================================
+const TEST_MODE = (function() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    if (params.has('prod')) return false;            // URL 強制正式
+    if (params.has('test')) return true;             // URL 強制測試
+    var ls = localStorage.getItem('testMode');
+    if (ls === 'off') return false;                  // admin 關閉
+    if (ls === 'on') return true;                    // admin 開啟
+    return true;                                      // 預設開啟
+  } catch(e) { return true; }
+})();
+if (TEST_MODE) { try { console.info('%c🧪 TEST MODE ON', 'background:#f44336;color:white;padding:2px 8px;border-radius:4px;font-weight:bold;'); } catch(e) {} }
 
 // 工具函式
 function getTeamById(id) { return CONFIG.TEAMS.find(t => t.id === parseInt(id)); }
