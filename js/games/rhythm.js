@@ -89,14 +89,17 @@ window.RhythmGame = {
       var n = this.notes[i];
       if (n.lane === lane && !n.hit) {
         var dist = Math.abs(n.y - this.hitZoneY);
-        if (dist < 45 && dist < bestDist) { bestNote = n; bestDist = dist; }
+        var goodThresh = 45 + this.noteSpeed * 2; // 隨速度放寬
+        if (dist < goodThresh && dist < bestDist) { bestNote = n; bestDist = dist; }
       }
     }
     if (bestNote) {
-      var accuracy = bestDist < 15 ? 'perfect' : 'good';
+      // 隨 noteSpeed 放寬命中判定，避免高速時幾乎不可能打到 perfect
+      var perfThresh = 15 + this.noteSpeed * 1.5;
+      var accuracy = bestDist < perfThresh ? 'perfect' : 'good';
       var pts = accuracy === 'perfect' ? 25 : 15;
-      // Combo bonus (enhanced)
-      var comboBonus = Math.min(this.combo * 5, 50);
+      // Combo bonus (enhanced，上限 30 避免每點爆分)
+      var comboBonus = Math.min(this.combo * 3, 30);
       pts += comboBonus;
 
       if (bestNote.type === 'hold') {
@@ -142,8 +145,8 @@ window.RhythmGame = {
           this.lanes = 3;
           this.laneWidth = Math.floor(this.canvasW / this.lanes);
         }
-        this.noteSpeed = Math.min(7, 3 + (this.round - 1) * 0.8);
-        this.spawnRate = Math.max(250, 500 - (this.round - 1) * 80);
+        this.noteSpeed = Math.min(5.5, 3 + (this.round - 1) * 0.6); // 上限 5.5 保留可玩性
+        this.spawnRate = Math.max(300, 500 - (this.round - 1) * 70);
         this.notes = [];
         if (this.spawnTimer) clearInterval(this.spawnTimer);
         var self = this;

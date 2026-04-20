@@ -158,6 +158,9 @@ window.DodgeGame = {
           }
         }
         if (typeof AudioEngine !== 'undefined') AudioEngine.penalty();
+        // 壞掉晶圓額外扣分，提供明確負回饋（前端 clampScore 會確保 >= 0）
+        this.game.score = Math.max(0, (this.game.score || 0) - 50);
+        this.game.updateHUD();
         this.game.loseLife();
         // Remove from queue if somehow still there
         this._removeFromQueue(w);

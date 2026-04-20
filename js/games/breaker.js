@@ -3,6 +3,7 @@ window.BreakerGame = {
   balls: [],
   bricks: [], score: 0, round: 1,
   canvasW: 0, canvasH: 0, brickRows: 5, ballSpeed: 4,
+  MAX_BALLS: 3,
 
   init(game) {
     this.game = game; this.score = 0; this.round = 1; this.ballSpeed = 4;
@@ -25,11 +26,14 @@ window.BreakerGame = {
 
   createBall(offsetAngle) {
     var angle = (offsetAngle || 0) + (-Math.PI/4 + Math.random() * Math.PI/2 - Math.PI/2);
+    // 確保最小水平 dx，避免貼壁垂直彈跳無意義回合
+    var dx = Math.cos(angle) * this.ballSpeed;
+    if (Math.abs(dx) < 1.2) dx = (dx < 0 ? -1.2 : 1.2);
     return {
       x: this.canvasW / 2 + (offsetAngle ? (Math.random()-0.5)*60 : 0),
       y: this.canvasH - 60,
-      dx: Math.cos(angle) * this.ballSpeed,
-      dy: -Math.abs(Math.sin(angle) * this.ballSpeed),
+      dx: dx,
+      dy: -Math.max(2, Math.abs(Math.sin(angle) * this.ballSpeed)), // 最小 2px/tick 防穿模
       radius: 6
     };
   },
@@ -45,10 +49,9 @@ window.BreakerGame = {
         this.bricks.push({ x: c * brickW + 2, y: r * (brickH + 4) + 40, w: brickW - 4, h: brickH, color: colors[r % colors.length], hits: r >= 5 ? 2 : 1 });
       }
     }
-    // Start with main ball + extra ball
+    // Start with main ball + extra ball（硬性上限 MAX_BALLS）
     this.balls = [this.createBall(0)];
-    if (this.round >= 1) {
-      // Extra ball from the start
+    if (this.round >= 1 && this.balls.length < this.MAX_BALLS) {
       this.balls.push(this.createBall(0.3));
     }
   },

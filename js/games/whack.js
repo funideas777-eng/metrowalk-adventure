@@ -53,12 +53,15 @@ window.WhackGame = {
     var t = this.holes[idx]; if (!t) return;
     clearTimeout(t.timer);
     if (t.emoji === this.DANGER) {
-      // Skull = lose life
+      // Skull = lose life + 扣 30 分（由 clampScore 保底 0）
       this.game.loseLife();
       this.combo = 0;
+      this.score = Math.max(0, this.score - 30);
     } else {
       this.combo++; if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-      this.score += t.points + Math.min(this.combo*2,20); this.hitCount++;
+      // combo 加成上限 15，防止後期無限放大
+      this.score += Math.max(0, t.points) + Math.min(this.combo*2, 15);
+      this.hitCount++;
       AudioEngine.whackHit(); AudioEngine.comboHit(this.combo);
     }
     this.holes[idx] = null;

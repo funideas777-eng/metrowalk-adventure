@@ -198,7 +198,8 @@ window.ReactionGame = {
       this.smashCount++;
       this.combo++;
       if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-      const pts = 20 + Math.min(this.combo * 5, 30);
+      // 每張卡分數上限 30（20 + combo bonus 上限 10），防後期失控
+      const pts = 20 + Math.min(this.combo * 2, 10);
       this.score += pts;
 
       AudioEngine.whackHit();
@@ -238,9 +239,10 @@ window.ReactionGame = {
         }, 600);
       }
     } else {
-      // Wrong tap on matched card - penalty
+      // Wrong tap on matched card - penalty（額外扣 10 分，讓錯點有明確負回饋）
       this.lives--;
       this.combo = 0;
+      this.score = Math.max(0, this.score - 10);
       AudioEngine.penalty();
 
       card.animClass = 'rc-wrong-anim';

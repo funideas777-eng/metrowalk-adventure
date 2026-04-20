@@ -273,6 +273,20 @@
     }
   }
 
+  // === 前端分數上限（對齊後端 GAME_LIMITS，防作弊第一道關卡）===
+  const GAME_SCORE_CAP = {
+    pacman:5000, snake:5000, whack:5000, memory:8000, quiz:5000,
+    catch:5000, breaker:8000, shooter:5000, dodge:5000, reaction:5000,
+    rhythm:5000, puzzle:8000,
+    'cook-boba':5000, 'cook-beef':5000, 'cook-dumpling':5000,
+    'cook-shaved':5000, 'cook-cake':5000
+  };
+  const SCORE_CAP = GAME_SCORE_CAP[gameId] || 5000;
+  function clampScore(n) {
+    if (typeof n !== 'number' || !isFinite(n)) return 0;
+    return Math.max(0, Math.min(SCORE_CAP, Math.floor(n)));
+  }
+
   // === GameState ===
   const GameState = {
     running: false, paused: false,
@@ -281,8 +295,11 @@
     timeLeft: gameConfig.duration || 60,
     canvas: null, ctx: null, timer: null, animFrame: null,
     round: 1,
+    scoreCap: SCORE_CAP,
 
     updateHUD() {
+      // 防禦層：每次刷新 HUD 都夾住分數，擋掉遊戲內部直接指派 score 繞過 addScore 的情境
+      this.score = clampScore(this.score);
       document.getElementById('hudScore').textContent = this.score;
       document.getElementById('hudTime').textContent = this.timeLeft;
       // Lives
@@ -298,7 +315,8 @@
     },
 
     addScore(pts) {
-      this.score += pts;
+      if (typeof pts !== 'number' || !isFinite(pts)) return;
+      this.score = clampScore(this.score + pts);
       this.updateHUD();
       AudioEngine.scoreUp();
       if (navigator.vibrate) navigator.vibrate(20);
@@ -503,6 +521,8 @@
     AudioEngine.gameEnd();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
 
+    // 最終定分：夾到上限後鎖定，避免後續再被遊戲更新
+    GameState.score = clampScore(GameState.score);
     var threshold = gameConfig.threshold || 0;
     var passed = GameState.score >= threshold;
 
@@ -541,15 +561,17 @@
     btn.textContent = '⏳ 提交中...';
     var session = Auth.getSession();
     try {
-      // 防作弊：附帶簽章
-      var sig = await signScore(GameState.score);
+      // 防作弊：提交前再次夾分數 + 附帶簽章
+      var finalScore = clampScore(GameState.score);
+      GameState.score = finalScore;
+      var sig = await signScore(finalScore);
       var result = await API.post('WRITE', {
         action: 'submitScore',
         playerId: session.playerId,
         playerName: session.name,
         teamId: session.teamId,
         gameId: gameId,
-        score: GameState.score,
+        score: finalScore,
         signature: sig.signature,
         startTime: sig.startTime
       });
