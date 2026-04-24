@@ -66,6 +66,41 @@ const QUIZ_BANK = [
   { id:37, q:'半導體製程中nm代表？', options:['毫米','微米','奈米','皮米'], answer:2 }
 ];
 
+// ============================================================
+// === 關主對話驗證（找出照片中馬賽克的資訊）===
+// 安全設計：
+//   - 答案明文絕不出現在前端或 API 回應
+//   - 前端只拿到 photoUrl + keeperName + hint
+//   - 驗證透過 sha256(salt + 正規化答案) 比對
+//   - 每 playerId+gameId 每 10 分鐘最多 5 次
+//   - 解鎖後存 KV (30 天) + 前端 localStorage
+// 使用者後續會提供實際照片與答案，只需修改下方 LOCATION_CHECKS
+// ============================================================
+const LOCATION_CHECKS = {
+  // 範例格式（實際資料稍後填入）：
+  // 'pacman': {
+  //   photoUrl: 'https://pub-974830b23d4947ddb6250ae13ca82197.r2.dev/hints/pacman.jpg',
+  //   keeperName: '美食街關主',
+  //   keeperAvatar: '🧑‍🍳',
+  //   hint: '去美食街櫃台旁找到這張告示牌，輸入被馬賽克遮住的店名',
+  //   salt: 'ml-pacman-2026-xyz',
+  //   // sha256(salt + normalize(answer))，可在本地以：
+  //   //   node -e "const c=require('crypto');console.log(c.createHash('sha256').update('ml-pacman-2026-xyz'+'答案').digest('hex'))"
+  //   answerHash: ''
+  // }
+};
+
+// 輸入正規化（允許全半形、標點、大小寫容錯）
+function normalizeAnswer(s) {
+  if (!s) return '';
+  return String(s)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s\u3000]+/g, '')                 // 所有空白（含全形）
+    .replace(/[，。！？、；：""''「」『』（）]/g, '') // 中文標點
+    .replace(/[,\.!\?;:"'()\[\]\{\}\-_]/g, '');  // 英文標點
+}
+
 // === 遊戲座標 ===
 const GAME_LOCATIONS = [
   {gameId:'pacman',lat:24.95740,lng:121.22560},{gameId:'catch',lat:24.95760,lng:121.22600},
@@ -265,6 +300,7 @@ async function handleGet(p, env) {
     case 'startGame':        return startGame(p, env);
     case 'getOnlineTeam':    return getOnlineTeam(p, env);
     case 'getEventStatus':   return getEventStatus(p, env);
+    case 'getLocationHint':  return getLocationHint(p, env);
     default: return { error: 'Unknown action: ' + action };
   }
 }
@@ -281,6 +317,7 @@ async function handlePost(body, env, request, ctx) {
     case 'uploadPhoto':      return uploadPhoto(body, env);
     case 'broadcast':        return broadcast(body, env);
     case 'verifyPhoto':      return verifyPhoto(body, env);
+    case 'verifyLocation':   return verifyLocation(body, env);
     case 'addManualPoints':  return addManualPoints(body, env);
     case 'recalcTeamPoints': return recalcTeamPoints(body, env);
     case 'sendChat':         return sendChat(body, env);
@@ -309,6 +346,78 @@ async function auditLog(env, action, details) {
       .bind(new Date().toISOString(), action, JSON.stringify(details).substring(0, 500))
       .run();
   } catch (e) { /* ignore */ }
+}
+
+// ============================================================
+// 關主驗證：getLocationHint / verifyLocation
+// ============================================================
+async function getLocationHint(p, env) {
+  const gameId = String(p.gameId || '');
+  const playerId = String(p.playerId || '');
+  if (!gameId || !playerId) return { error: 'gameId/playerId required' };
+  const cfg = LOCATION_CHECKS[gameId];
+  // 若該遊戲沒設定關主檢查 → 直接視為解鎖
+  if (!cfg) return { required: false, unlocked: true };
+
+  let unlocked = false;
+  try {
+    const v = await env.KV.get(`loc_unlock:${playerId}:${gameId}`);
+    unlocked = v === '1';
+  } catch (e) {}
+
+  return {
+    required: true,
+    unlocked: unlocked,
+    photoUrl: cfg.photoUrl,
+    keeperName: cfg.keeperName || '關主',
+    keeperAvatar: cfg.keeperAvatar || '🧙',
+    hint: cfg.hint || '找到照片中的資訊並輸入',
+    // 不含任何答案資訊
+  };
+}
+
+async function verifyLocation(body, env) {
+  const gameId = String(body.gameId || '');
+  const playerId = String(body.playerId || '');
+  const answer = String(body.answer || '');
+  if (!gameId || !playerId) return { ok: false, error: 'gameId/playerId required' };
+  if (!answer || answer.length > 100) return { ok: false, error: '輸入格式錯誤' };
+
+  const cfg = LOCATION_CHECKS[gameId];
+  if (!cfg) return { ok: true, unlocked: true }; // 無需驗證
+
+  // 次數限制：10 分鐘 5 次
+  const attemptKey = `loc_attempt:${playerId}:${gameId}`;
+  let attempts = 0;
+  try {
+    const v = await env.KV.get(attemptKey);
+    attempts = v ? parseInt(v, 10) || 0 : 0;
+  } catch (e) {}
+  if (attempts >= 5) {
+    return { ok: false, error: '嘗試次數過多，請 10 分鐘後再試', locked: true };
+  }
+
+  // 雜湊比對（不做常數時間比對因為 sha256hex 輸出為字串且長度固定；避免 timing 攻擊風險極低）
+  const expected = cfg.answerHash || '';
+  const actualHash = await sha256hex((cfg.salt || '') + normalizeAnswer(answer));
+  const ok = expected && actualHash === expected.toLowerCase();
+
+  if (!ok) {
+    try {
+      // 增加嘗試次數，TTL 600s
+      await env.KV.put(attemptKey, String(attempts + 1), { expirationTtl: 600 });
+    } catch (e) {}
+    return { ok: false, remaining: Math.max(0, 4 - attempts), error: '答案不正確' };
+  }
+
+  // 成功：寫入解鎖 + 清除 attempts
+  try {
+    await env.KV.put(`loc_unlock:${playerId}:${gameId}`, '1', { expirationTtl: 60 * 60 * 24 * 30 });
+    await env.KV.delete(attemptKey);
+  } catch (e) {}
+  // 不記錄明文答案
+  await auditLog(env, 'locationUnlock', { playerId, gameId });
+  return { ok: true, unlocked: true };
 }
 
 // Admin 驗證

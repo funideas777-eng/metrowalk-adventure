@@ -136,7 +136,7 @@
   <div class="tab-item" onclick="switchTab('rank')"><div class="tab-item-icon">🏆</div><div class="tab-item-label">排行榜</div></div>
 </div>
 
-<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/gps.js"></script><script src="js/broadcast.js"></script><script src="js/chat.js"></script><script src="js/presence.js"></script>
+<script src="js/config.js"></script><script src="js/api.js"></script><script src="js/auth.js"></script><script src="js/audio.js"></script><script src="js/gps.js"></script><script src="js/broadcast.js"></script><script src="js/chat.js"></script><script src="js/presence.js"></script><script src="js/gatekeeper.js"></script>
 <script src="js/dialogue.js"></script><script src="js/dialogue-scripts.js"></script>
 <script>
   if (!Auth.requireLogin()) throw new Error('未登入');
@@ -155,13 +155,21 @@
       alert('活動時間已結束，無法進入遊戲！');
       return;
     }
-    var script = (typeof DialogueScripts !== 'undefined') ? DialogueScripts[gameId] : null;
-    if (script && script.length > 0) {
-      Dialogue.show(script, function() {
+    // 先走關主驗證（未解鎖會彈出對話框；已解鎖或該遊戲無設定則直接進入）
+    var doEnter = function() {
+      var script = (typeof DialogueScripts !== 'undefined') ? DialogueScripts[gameId] : null;
+      if (script && script.length > 0) {
+        Dialogue.show(script, function() {
+          window.location.href = targetUrl || ('game.html?id=' + gameId);
+        });
+      } else {
         window.location.href = targetUrl || ('game.html?id=' + gameId);
-      });
+      }
+    };
+    if (typeof Gatekeeper !== 'undefined') {
+      Gatekeeper.guard(gameId, doEnter, function() { /* 取消 */ });
     } else {
-      window.location.href = targetUrl || ('game.html?id=' + gameId);
+      doEnter();
     }
   }
 

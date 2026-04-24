@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metrowalk-v14';
+const CACHE_NAME = 'metrowalk-v15';
 const STATIC_ASSETS = [
   '/metrowalk-adventure/index.html',
   '/metrowalk-adventure/map.html',
@@ -19,7 +19,8 @@ const STATIC_ASSETS = [
   '/metrowalk-adventure/js/dialogue.js',
   '/metrowalk-adventure/js/dialogue-scripts.js',
   '/metrowalk-adventure/js/sw-manager.js',
-  '/metrowalk-adventure/js/presence.js'
+  '/metrowalk-adventure/js/presence.js',
+  '/metrowalk-adventure/js/gatekeeper.js'
 ];
 
 self.addEventListener('install', e => {
