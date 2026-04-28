@@ -6,6 +6,7 @@ const STATIC_ASSETS = [
   '/metrowalk-adventure/photo-task.html',
   '/metrowalk-adventure/scoreboard.html',
   '/metrowalk-adventure/admin.html',
+  '/metrowalk-adventure/info.html',
   '/metrowalk-adventure/css/common.css',
   '/metrowalk-adventure/manifest.json',
   '/metrowalk-adventure/js/config.js',

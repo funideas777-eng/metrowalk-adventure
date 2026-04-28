@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#E91E63">
+  <title>活動資訊 - 大江購物冒險</title>
+  <link rel="stylesheet" href="css/common.css?v=4">
+  <style>
+    body { background:#0a0a1a; min-height:100vh; min-height:100dvh; }
+    .info-page { padding-bottom:32px; }
+    .info-hero { padding:28px 20px 20px; text-align:center; background:linear-gradient(180deg, rgba(233,30,99,0.45), rgba(10,10,26,0)); position:relative; overflow:hidden; }
+    .info-hero::before { content:""; position:absolute; inset:0; background-image:linear-gradient(rgba(0,188,212,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,188,212,0.05) 1px,transparent 1px); background-size:32px 32px; pointer-events:none; }
+    .info-hero-tag { display:inline-block; padding:6px 18px; background:linear-gradient(135deg,#E91E63,#FF6F91); color:#fff; font-weight:900; font-size:12px; letter-spacing:3px; border-radius:14px; margin-bottom:10px; box-shadow:0 4px 16px rgba(233,30,99,0.45); }
+    .info-hero-title { font-size:24px; color:#fff; font-weight:900; letter-spacing:2px; margin-bottom:6px; }
+    .info-hero-sub { font-size:13px; color:#00BCD4; letter-spacing:2px; }
+    .info-hero-meta { font-size:12px; color:rgba(255,255,255,0.65); margin-top:8px; }
+
+    .section { margin:18px 16px; padding:16px; background:rgba(255,255,255,0.04); border:1px solid rgba(0,188,212,0.18); border-radius:18px; backdrop-filter:blur(8px); box-shadow:0 4px 18px rgba(0,0,0,0.25); }
+    .section-title { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:900; color:#00BCD4; margin-bottom:12px; letter-spacing:1px; }
+    .section-title-line { flex:1; height:1px; background:linear-gradient(90deg, rgba(0,188,212,0.5), transparent); }
+
+    /* Schedule */
+    .schedule { display:flex; flex-direction:column; gap:8px; }
+    .sch-row { display:flex; gap:12px; padding:10px 12px; background:rgba(255,255,255,0.03); border-left:3px solid #E91E63; border-radius:8px; }
+    .sch-time { font-size:13px; font-weight:900; color:#FF6F91; min-width:84px; letter-spacing:0.5px; }
+    .sch-content { flex:1; font-size:13px; color:#fff; line-height:1.5; }
+    .sch-tag { display:inline-block; padding:1px 6px; font-size:10px; border-radius:6px; background:rgba(0,188,212,0.18); color:#00E5FF; margin-left:6px; vertical-align:middle; }
+
+    /* Venue */
+    .venue-card { padding:14px; background:linear-gradient(135deg, rgba(233,30,99,0.20), rgba(0,188,212,0.10)); border:1px solid rgba(0,188,212,0.32); border-radius:14px; }
+    .venue-name { font-size:15px; color:#fff; font-weight:900; }
+    .venue-addr { font-size:12px; color:rgba(255,255,255,0.78); margin-top:4px; line-height:1.7; }
+    .venue-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+    .venue-btn { flex:1; min-width:140px; padding:10px 12px; text-align:center; background:linear-gradient(135deg,#E91E63,#FF6F91); color:#fff; font-weight:900; font-size:13px; border-radius:10px; text-decoration:none; box-shadow:0 4px 14px rgba(233,30,99,0.32); }
+    .venue-btn.outline { background:transparent; color:#00BCD4; border:1.5px solid #00BCD4; box-shadow:none; }
+    .map-embed { width:100%; height:220px; margin-top:12px; border:0; border-radius:12px; }
+
+    /* Transport */
+    .trans-block { margin-top:14px; padding:12px; background:rgba(0,188,212,0.08); border:1px solid rgba(0,188,212,0.25); border-radius:12px; }
+    .trans-title { font-size:13px; font-weight:800; color:#00E5FF; margin-bottom:6px; }
+    .trans-body { font-size:12px; color:rgba(255,255,255,0.78); line-height:1.8; }
+
+    /* Floor list */
+    .floor-list { display:flex; flex-direction:column; gap:8px; }
+    .floor-row { display:flex; gap:12px; padding:10px 12px; background:rgba(255,255,255,0.03); border-radius:10px; }
+    .floor-icon { font-size:22px; width:36px; text-align:center; }
+    .floor-tier { font-size:13px; font-weight:900; color:#FF6F91; min-width:46px; }
+    .floor-desc { flex:1; font-size:12px; color:rgba(255,255,255,0.78); line-height:1.5; }
+
+    .nav-bottom { display:flex; gap:10px; padding:0 16px; }
+    .nav-btn { flex:1; padding:14px; background:rgba(255,255,255,0.06); border:1px solid rgba(0,188,212,0.25); border-radius:12px; text-align:center; color:#fff; text-decoration:none; font-size:13px; font-weight:700; }
+    .nav-btn.primary { background:linear-gradient(135deg,#E91E63,#9C27B0); border-color:#FF6F91; color:#fff; }
+  </style>
+</head>
+<body>
+<div class="info-page">
+  <div class="top-bar"><button class="top-bar-back" onclick="window.location.href='map.html'">←</button><div class="top-bar-title">📋 活動資訊</div><div style="width:40px;"></div></div>
+
+  <!-- Hero -->
+  <div class="info-hero">
+    <span class="info-hero-tag">METROWALK · 大江冒險</span>
+    <div class="info-hero-title" id="heroTitle">大江購物冒險</div>
+    <div class="info-hero-sub" id="heroSub">Metrowalk Adventure</div>
+    <div class="info-hero-meta" id="heroMeta">📅 活動時間</div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="section">
+    <div class="section-title">🕒 活動行程 <span class="section-title-line"></span></div>
+    <div class="schedule" id="schedule">
+      <div class="sch-row"><div class="sch-time">09:30</div><div class="sch-content">於 1F 中庭噴泉廣場報到、領取隊伍識別、加入 LINE 群<span class="sch-tag">報到</span></div></div>
+      <div class="sch-row"><div class="sch-time">10:00</div><div class="sch-content">主管致詞 + 開場團拍 + 活動規則說明<span class="sch-tag">開場</span></div></div>
+      <div class="sch-row"><div class="sch-time">10:20</div><div class="sch-content">GBF~5F 全館闖關開始（13 款小遊戲 + 5 款料理 + 3 款合照）<span class="sch-tag">闖關</span></div></div>
+      <div class="sch-row"><div class="sch-time">11:00</div><div class="sch-content">⚡ 緊急任務 1：閃電集合令（1F 中庭點名拍合照）<span class="sch-tag">+500</span></div></div>
+      <div class="sch-row"><div class="sch-time">12:00</div><div class="sch-content">🧠 緊急任務 2：限時搶答（3F 服務台）<span class="sch-tag">+300</span></div></div>
+      <div class="sch-row"><div class="sch-time">13:00</div><div class="sch-content">🎁 緊急任務 3：神秘寶箱（GBF 美食街找隱藏貼紙）<span class="sch-tag">+400</span></div></div>
+      <div class="sch-row"><div class="sch-time">13:30</div><div class="sch-content">截止提交分數 / 排行榜結算<span class="sch-tag">結算</span></div></div>
+      <div class="sch-row"><div class="sch-time">14:00</div><div class="sch-content">頒獎典禮 + 大合影 + 慶功活動<span class="sch-tag">慶功</span></div></div>
+    </div>
+  </div>
+
+  <!-- Venue -->
+  <div class="section">
+    <div class="section-title">📍 場地與地圖 <span class="section-title-line"></span></div>
+    <div class="venue-card">
+      <div class="venue-name" id="venueName">大江國際購物中心</div>
+      <div class="venue-addr" id="venueAddr">📮 桃園市中壢區中園路二段501號<br>🕐 營業時間：11:00 - 22:00<br>📞 03-468-3568</div>
+      <div class="venue-actions">
+        <a class="venue-btn" href="https://www.google.com/maps/dir/?api=1&destination=大江國際購物中心" target="_blank" rel="noopener">🗺️ Google 路線</a>
+        <a class="venue-btn outline" href="https://www.google.com/maps/search/?api=1&query=大江國際購物中心" target="_blank" rel="noopener">📍 在地圖開啟</a>
+      </div>
+      <iframe class="map-embed" loading="lazy" src="https://maps.google.com/maps?q=%E5%A4%A7%E6%B1%9F%E5%9C%8B%E9%9A%9B%E8%B3%BC%E7%89%A9%E4%B8%AD%E5%BF%83&output=embed" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+
+    <div class="trans-block">
+      <div class="trans-title">🚇 大眾運輸</div>
+      <div class="trans-body">
+        ・<b style="color:#fff;">高鐵 + 接駁</b>：高鐵桃園站 → 5A／5B 公車（往中壢）約 25 分鐘<br>
+        ・<b style="color:#fff;">台鐵</b>：中壢車站後站 → 計程車 / 桃園客運 152、170 約 15 分鐘<br>
+        ・<b style="color:#fff;">公車</b>：搭乘 152、172、5A、5B、132 至「大江購物中心」站<br>
+        ・<b style="color:#fff;">機場捷運</b>：A21 環北站 → 計程車約 10 分鐘
+      </div>
+    </div>
+
+    <div class="trans-block">
+      <div class="trans-title">🚗 自駕停車</div>
+      <div class="trans-body">
+        ・國道一號 → 中壢交流道（下交流道往內壢方向約 5 分鐘）<br>
+        ・<b style="color:#fff;">汽車停車場</b>：B2~B4 共 1,800 席<br>
+        ・<b style="color:#00E5FF;">消費滿額可折抵停車費</b>（依當期活動）<br>
+        ・<b style="color:#fff;">機車停車場</b>：戶外免費機車停車格
+      </div>
+    </div>
+  </div>
+
+  <!-- Floors -->
+  <div class="section">
+    <div class="section-title">🏢 大江 樓層導覽 <span class="section-title-line"></span></div>
+    <div class="floor-list" id="floorList">
+      <div class="floor-row"><div class="floor-tier">GBF</div><div class="floor-icon">🍔</div><div class="floor-desc"><b style="color:#FF6F91;">地下美食街</b> · 異國美食、輕食飲品、超市；闖關：小精靈 / 接水果</div></div>
+      <div class="floor-row"><div class="floor-tier">1F</div><div class="floor-icon">👗</div><div class="floor-desc"><b style="color:#FF6F91;">時尚大廳</b> · 國際彩妝、精品配件、中庭噴泉廣場；闖關：貪食蛇 / 打地鼠</div></div>
+      <div class="floor-row"><div class="floor-tier">2F</div><div class="floor-icon">🏠</div><div class="floor-desc"><b style="color:#FF6F91;">生活家居</b> · 服飾、生活雜貨、文創品牌；闖關：記憶翻牌 / 打磚塊</div></div>
+      <div class="floor-row"><div class="floor-tier">3F</div><div class="floor-icon">🎮</div><div class="floor-desc"><b style="color:#FF6F91;">娛樂天地</b> · 童裝、玩具、3C 數位；闖關：知識問答 / 弓箭挑戰</div></div>
+      <div class="floor-row"><div class="floor-tier">4F</div><div class="floor-icon">🍽️</div><div class="floor-desc"><b style="color:#FF6F91;">美食餐廳</b> · 連鎖餐飲、特色料理；闖關：晶圓大師 / 色彩達人 + 5 款料理小遊戲</div></div>
+      <div class="floor-row"><div class="floor-tier">5F</div><div class="floor-icon">🎬</div><div class="floor-desc"><b style="color:#FF6F91;">影城樂園</b> · 威秀影城、家庭娛樂、KTV；闖關：節奏大師 / 拼圖挑戰 / 拍照打卡</div></div>
+    </div>
+  </div>
+
+  <!-- 規則摘要 -->
+  <div class="section">
+    <div class="section-title">📋 活動規則 <span class="section-title-line"></span></div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.85); line-height:1.7;">
+      ・全 60 隊（每隊 10 人），共 600 位同仁<br>
+      ・<b style="color:#FF6F91;">13 款小遊戲</b> 分布於 GBF~5F，每款 45-120 秒挑戰<br>
+      ・<b style="color:#FF6F91;">5 款料理小遊戲</b>（手機 mini-game）+ 大江消費拍照打卡 = 250 分<br>
+      ・<b style="color:#FF6F91;">3 款合照任務</b>（大愛心 / 飛躍大江 / 人體金字塔）= 250 分<br>
+      ・<b style="color:#FF6F91;">緊急任務</b>：11:00 / 12:00 / 13:00 三波突發任務（最高 +500）<br>
+      ・<b style="color:#FF6F91;">每款遊戲團隊代表分</b> 取本隊最高分玩家成績<br>
+      ・<b style="color:#00E5FF;">前 5 名團隊獎勵</b>：500 / 400 / 300 / 200 / 100 分<br>
+      ・<b style="color:#FFB300;">每位玩家每款遊戲冷卻 5 分鐘只能提交 1 次</b>（防作弊）
+    </div>
+  </div>
+
+  <!-- 注意事項 -->
+  <div class="section">
+    <div class="section-title">⚠️ 注意事項 <span class="section-title-line"></span></div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.85); line-height:1.7;">
+      ・請於指定樓層內進行，勿影響其他顧客與店家營運<br>
+      ・拍照打卡請尊重店家與顧客，避免拍到無關人士<br>
+      ・料理任務「大江消費」金額不限，重點在於支持百貨並合影<br>
+      ・隊伍 LINE 群為唯一公告管道，遇問題可洽 5F 服務台<br>
+      ・部分關主驗證為實體引導，請至照片指定位置查看資訊輸入<br>
+      ・請愛護裝置與環境，活動結束將進行最佳隊伍頒獎
+    </div>
+  </div>
+
+  <!-- 緊急聯繫 -->
+  <div class="section">
+    <div class="section-title">📞 緊急聯繫 <span class="section-title-line"></span></div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.85); line-height:1.7;">
+      ・活動指揮中心：5F 服務台<br>
+      ・隊伍 LINE 群：請洽工作人員協助加入<br>
+      ・大江客服：03-468-3568<br>
+      ・若身體不適請立即至 1F 服務台尋求協助
+    </div>
+  </div>
+
+  <div class="nav-bottom">
+    <a class="nav-btn primary" href="map.html">🗺️ 回到地圖</a>
+    <a class="nav-btn" href="scoreboard.html">🏆 排行榜</a>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script>
+  try {
+    if (CONFIG.EVENT_NAME) document.getElementById('heroTitle').textContent = CONFIG.EVENT_NAME;
+    if (CONFIG.EVENT_SUBTITLE) document.getElementById('heroSub').textContent = CONFIG.EVENT_SUBTITLE;
+    var meta = '📅 ' + (CONFIG.EVENT_DATE_DISPLAY || CONFIG.EVENT_DATE || '') + ' · ' + (CONFIG.EVENT_TIME || '');
+    document.getElementById('heroMeta').textContent = meta;
+    if (CONFIG.VENUE) document.getElementById('venueName').textContent = CONFIG.VENUE;
+    if (CONFIG.VENUE_ADDRESS) {
+      var addr = '📮 ' + CONFIG.VENUE_ADDRESS + '<br>🕐 營業時間：' + (CONFIG.VENUE_HOURS || '11:00-22:00') + '<br>📞 ' + (CONFIG.VENUE_PHONE || '');
+      document.getElementById('venueAddr').innerHTML = addr;
+    }
+  } catch(e) { console.warn('CONFIG fallback', e); }
+</script>
+</body>
+</html>

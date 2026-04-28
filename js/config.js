@@ -4,11 +4,17 @@
 
 const CONFIG = {
   EVENT_NAME: '大江購物冒險',
+  EVENT_SUBTITLE: 'Metrowalk Adventure',
   EVENT_DATE: '2026-05-01',
+  EVENT_DATE_DISPLAY: '2026/5/1 (五)',
   EVENT_TIME: '10:00-14:00',
   EVENT_START_HOUR: 10,
   EVENT_END_HOUR: 14,
-  VENUE: '大江購物中心（桃園市中壢區中園路二段501號）',
+  VENUE: '大江國際購物中心',
+  VENUE_ADDRESS: '桃園市中壢區中園路二段501號',
+  VENUE_PHONE: '03-468-3568',
+  VENUE_HOURS: '11:00-22:00',
+  VENUE_LATLNG: { lat: 24.95740, lng: 121.22580 },
 
   // === 後端選擇：'gas' 或 'cf' ===
   // 'gas' = Google Apps Script（預設，10 節點分流）
